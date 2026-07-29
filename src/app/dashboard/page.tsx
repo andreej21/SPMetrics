@@ -1,5 +1,16 @@
 import Link from "next/link";
 import {
+  Wallet,
+  Megaphone,
+  TrendUp,
+  ShoppingBag,
+  Target,
+  Receipt,
+  ChartBar,
+  ChartLineUp,
+  Rocket,
+} from "@phosphor-icons/react/ssr";
+import {
   getSummary,
   getRevenueByChannel,
   getTopCampaigns,
@@ -86,17 +97,17 @@ export default async function Dashboard({
     >
       {/* KPIs */}
       <div className="kpi-grid">
-        <Kpi label="Revenue" value={money(summary.revenue)} />
-        <Kpi label="Ad spend" value={money(spendTotal)} />
-        <Kpi label="Blended ROAS" value={fmtRoas(blendedRoas)} hero />
-        <Kpi label="Orders" value={String(summary.orders)} />
-        <Kpi label="Conv. rate" value={`${(summary.conversionRate * 100).toFixed(2)}%`} />
-        <Kpi label="Avg order value" value={money(summary.aov)} />
+        <Kpi label="Revenue" value={money(summary.revenue)} icon={<Wallet size={16} weight="bold" />} />
+        <Kpi label="Ad spend" value={money(spendTotal)} icon={<Megaphone size={16} weight="bold" />} />
+        <Kpi label="Blended ROAS" value={fmtRoas(blendedRoas)} icon={<TrendUp size={16} weight="bold" />} hero />
+        <Kpi label="Orders" value={String(summary.orders)} icon={<ShoppingBag size={16} weight="bold" />} />
+        <Kpi label="Conv. rate" value={`${(summary.conversionRate * 100).toFixed(2)}%`} icon={<Target size={16} weight="bold" />} />
+        <Kpi label="Avg order value" value={money(summary.aov)} icon={<Receipt size={16} weight="bold" />} />
       </div>
 
       {/* Revenue by channel — single hue: category identity is on the label */}
       <div className="card">
-        <h3 className="sec-title">Revenue by channel</h3>
+        <h3 className="sec-title"><ChartBar size={14} weight="bold" /> Revenue by channel</h3>
         {channels.length === 0 ? (
           <p className="muted">No orders in this range yet.</p>
         ) : (
@@ -120,40 +131,42 @@ export default async function Dashboard({
 
       {/* Ad spend & ROAS */}
       <div className="card">
-        <h3 className="sec-title">Ad spend &amp; ROAS by channel</h3>
+        <h3 className="sec-title"><ChartLineUp size={14} weight="bold" /> Ad spend &amp; ROAS by channel</h3>
         {!hasSpend ? (
           <p className="muted">
             No ad spend loaded. Add some with <code>npm run spend:add</code> or connect Meta with <code>npm run spend:meta</code>.
           </p>
         ) : (
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Channel</th><th>Spend</th><th>Revenue</th><th>ROAS</th><th>Orders</th>
-              </tr>
-            </thead>
-            <tbody>
-              {roas.map((r) => (
-                <tr key={r.channel}>
-                  <td>{r.channel}</td>
-                  <td>{r.spend > 0 ? money(r.spend) : "—"}</td>
-                  <td>{money(r.revenue)}</td>
-                  <td className={roasClass(r.roas)} style={{ fontWeight: 700 }}>{fmtRoas(r.roas)}</td>
-                  <td>{r.orders}</td>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>Channel</th><th>Spend</th><th>Revenue</th><th>ROAS</th><th>Orders</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {roas.map((r) => (
+                  <tr key={r.channel}>
+                    <td>{r.channel}</td>
+                    <td>{r.spend > 0 ? money(r.spend) : "—"}</td>
+                    <td>{money(r.revenue)}</td>
+                    <td className={roasClass(r.roas)} style={{ fontWeight: 700 }}>{fmtRoas(r.roas)}</td>
+                    <td>{r.orders}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       <div className="grid-2">
         <div className="card">
-          <h3 className="sec-title">Top campaigns</h3>
+          <h3 className="sec-title"><Rocket size={14} weight="bold" /> Top campaigns</h3>
           <Table head={["Campaign", "Revenue", "Orders"]} rows={campaigns.map((c) => [c.campaign, money(c.revenue), String(c.orders)])} empty="No campaign data yet." />
         </div>
         <div className="card">
-          <h3 className="sec-title">Recent orders</h3>
+          <h3 className="sec-title"><ShoppingBag size={14} weight="bold" /> Recent orders</h3>
           <Table head={["Order", "Amount", "Attributed to"]} rows={orders.map((o) => [o.orderNumber ?? o.id.slice(0, 10), money(o.totalAmount, o.currency), o.channel ?? "—"])} empty="No orders yet." />
         </div>
       </div>
@@ -185,10 +198,13 @@ function Shell({ children, controls }: { children: React.ReactNode; controls?: R
   );
 }
 
-function Kpi({ label, value, hero }: { label: string; value: string; hero?: boolean }) {
+function Kpi({ label, value, icon, hero }: { label: string; value: string; icon?: React.ReactNode; hero?: boolean }) {
   return (
     <div className={`kpi${hero ? " hero" : ""}`}>
-      <div className="k-label">{label}</div>
+      <div className="k-top">
+        <div className="k-label">{label}</div>
+        {icon && <span className="k-icon">{icon}</span>}
+      </div>
       <div className="k-value">{value}</div>
     </div>
   );
@@ -197,15 +213,17 @@ function Kpi({ label, value, hero }: { label: string; value: string; hero?: bool
 function Table({ head, rows, empty }: { head: string[]; rows: string[][]; empty: string }) {
   if (rows.length === 0) return <p className="muted">{empty}</p>;
   return (
-    <table className="tbl">
-      <thead>
-        <tr>{head.map((h) => <th key={h}>{h}</th>)}</tr>
-      </thead>
-      <tbody>
-        {rows.map((r, ri) => (
-          <tr key={ri}>{r.map((cell, ci) => <td key={ci}>{cell}</td>)}</tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="tbl-wrap">
+      <table className="tbl">
+        <thead>
+          <tr>{head.map((h) => <th key={h}>{h}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((r, ri) => (
+            <tr key={ri}>{r.map((cell, ci) => <td key={ci}>{cell}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

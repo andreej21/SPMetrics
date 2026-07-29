@@ -1,4 +1,11 @@
 import Link from "next/link";
+import {
+  ArrowRight,
+  Storefront,
+  ShieldCheck,
+  Code,
+  ChartLineUp,
+} from "@phosphor-icons/react/ssr";
 
 const SNIPPET = `<script>
   !function(){window.sp=window.sp||function(){(sp.q=sp.q||[]).push(arguments)};
@@ -15,7 +22,7 @@ const box: React.CSSProperties = {
   overflowX: "auto",
   fontSize: 12.5,
   lineHeight: 1.6,
-  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+  fontFamily: "var(--font-mono)",
 };
 
 export default function Home() {
@@ -30,32 +37,32 @@ export default function Home() {
 
       <main className="container" style={{ maxWidth: 760 }}>
         <div style={{ margin: "12px 0 28px" }}>
-          <span className="pill"><span className="dot" /> First-party pixel</span>
-          <h1 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "16px 0 8px" }}>
+          <span className="pill"><ShieldCheck size={13} weight="bold" /> First-party pixel</span>
+          <h1 style={{ fontSize: 32, letterSpacing: "-0.03em", margin: "16px 0 8px" }}>
             Know which ad actually made the sale.
           </h1>
           <p className="muted" style={{ fontSize: 15, maxWidth: 560 }}>
             A first-party analytics &amp; attribution pixel that survives ITP and ad-blockers, stitches every click to
             its order, and joins your ad spend for true ROAS.
           </p>
-          <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
-            <Link href="/dashboard" style={{ background: "var(--ink)", color: "var(--plane)", padding: "10px 18px", borderRadius: 8, fontWeight: 600 }}>
-              Open dashboard →
+          <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/dashboard" className="btn btn-primary">
+              Open dashboard <ArrowRight size={16} weight="bold" />
             </Link>
-            <Link href="/shop.html" style={{ border: "1px solid var(--border)", padding: "10px 18px", borderRadius: 8, fontWeight: 600, color: "var(--ink)" }}>
-              Try the test store
+            <Link href="/shop.html" className="btn btn-secondary">
+              <Storefront size={16} /> Try the test store
             </Link>
           </div>
         </div>
 
         <div className="card">
-          <h3 className="sec-title">Install</h3>
+          <h3 className="sec-title"><Code size={14} weight="bold" /> Install</h3>
           <p style={{ marginTop: 0 }}>Paste in your storefront&apos;s <code>&lt;head&gt;</code>:</p>
           <pre style={box}>{SNIPPET.replace("COLLECTOR", origin)}</pre>
         </div>
 
         <div className="card">
-          <h3 className="sec-title">Track events</h3>
+          <h3 className="sec-title"><ChartLineUp size={14} weight="bold" /> Track events</h3>
           <pre style={box}>{`sp('page');                       // page view (auto-fired)
 sp('identify', { email: 'a@b.com' });
 sp('track', 'product_view', { productId: 'SKU-1', price: 4999 });
