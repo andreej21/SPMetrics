@@ -26,7 +26,10 @@ function validate(e) {
   const p = e.props || {};
   switch (e.type) {
     case "purchase":
-      if (!e.order || !(e.order.totalAmount > 0)) return { s: "invalid", t: "Missing order total" };
+      // A total must be *present* to be a well-formed order — but 0 is a real
+      // (free/discounted) order, not an error. Only flag when it's truly absent.
+      if (!e.order || e.order.totalAmount == null || isNaN(Number(e.order.totalAmount)))
+        return { s: "invalid", t: "No order total" };
       return { s: "valid", t: "Valid" };
     case "product_view":
     case "add_to_cart":
