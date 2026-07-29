@@ -217,6 +217,7 @@ function Shell({
           <div className="side-label">Views</div>
           <Link href={`/dashboard?site=${siteId}&days=${days}`} className="nav-item active"><House size={17} weight="bold" /> Overview</Link>
           <Link href={`/dashboard/attribution?site=${siteId}&days=${days}`} className="nav-item"><ChartBar size={17} weight="bold" /> Attribution</Link>
+          <Link href={`/dashboard/campaigns?site=${siteId}&days=${days}`} className="nav-item"><Rocket size={17} weight="bold" /> Campaigns</Link>
           <Link href="/" className="nav-item"><Code size={17} weight="bold" /> Install</Link>
         </div>
 

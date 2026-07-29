@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChartBar, House, Code, Storefront } from "@phosphor-icons/react/ssr";
+import { ChartBar, House, Code, Storefront, Rocket } from "@phosphor-icons/react/ssr";
 import { getAttributionBySource, getAttributionTimeseries } from "@/lib/attribution-analytics";
 import { getSummary, listSites, getPrevPeriod } from "@/lib/analytics";
 
@@ -181,6 +181,7 @@ function Shell({
           <div className="side-label">Views</div>
           <Link href={`/dashboard?site=${siteId}&days=${days}`} className="nav-item"><House size={17} weight="bold" /> Overview</Link>
           <Link href={`/dashboard/attribution?site=${siteId}&days=${days}`} className="nav-item active"><ChartBar size={17} weight="bold" /> Attribution</Link>
+          <Link href={`/dashboard/campaigns?site=${siteId}&days=${days}`} className="nav-item"><Rocket size={17} weight="bold" /> Campaigns</Link>
           <Link href="/" className="nav-item"><Code size={17} weight="bold" /> Install</Link>
         </div>
 
