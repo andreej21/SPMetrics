@@ -33,10 +33,16 @@
       const s = scripts[i].src || "";
       if (/\/px\.js(\?|$)/.test(s)) { pxSrc = s; break; }
     }
+    // The pixel publishes this once init() runs — richer than DOM sniffing.
+    const info = window.__SPMETRICS__ || {};
     emit("detect", {
       hasGlobal: typeof window[GLOBAL] === "function",
       pxSrc: pxSrc,
-      collectorOrigin: pxSrc ? new URL(pxSrc).origin : null,
+      version: info.version || null,
+      token: info.token || null,
+      platform: info.platform || null,
+      headless: typeof info.headless === "boolean" ? info.headless : null,
+      collectorOrigin: info.collector || (pxSrc ? new URL(pxSrc).origin : null),
       cookie: readCookie("sp_vid"),
     });
   }
@@ -50,7 +56,17 @@
         token: json.token || null,
         landingPage: json.landingPage || null,
         events: (json.events || []).map(function (e) {
-          return { type: e.type, name: e.name || null, hasOrder: !!e.order };
+          return {
+            type: e.type,
+            name: e.name || null,
+            props: e.props || null,
+            eventUrl: e.url || null,
+            path: e.path || null,
+            email: e.email || null,
+            hasOrder: !!e.order,
+            order: e.order || null,
+            ts: e.ts || null,
+          };
         }),
       });
     } catch (_) {}

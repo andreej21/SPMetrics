@@ -34,12 +34,15 @@
   const SS_LANDING = "sp_landing";
   const SS_REFERRER = "sp_referrer";
 
+  const VERSION = "1.0.0";
+
   const w = window as unknown as {
     sp?: { q?: Cmd[]; (...args: unknown[]): void };
     __opConfig?: Config;
+    __SPMETRICS__?: Record<string, unknown>;
   };
 
-  type Config = { token: string; host: string; autoPageview: boolean };
+  type Config = { token: string; host: string; platform: string; autoPageview: boolean };
 
   const config: Config = {
     token: "",
@@ -47,6 +50,7 @@
     host: (document.currentScript as HTMLScriptElement)?.src
       ? new URL((document.currentScript as HTMLScriptElement).src).origin
       : "__COLLECTOR_ORIGIN__",
+    platform: "web",
     autoPageview: true,
   };
 
@@ -195,7 +199,20 @@
   function init(token: string, opts?: Partial<Config>) {
     config.token = token;
     if (opts?.host) config.host = opts.host;
+    if (opts?.platform) config.platform = opts.platform;
     if (opts && typeof opts.autoPageview === "boolean") config.autoPageview = opts.autoPageview;
+
+    // Publish a diagnostics object the Pixel Helper extension can read directly,
+    // so it can show the pixel id / version / platform even before any event fires.
+    w.__SPMETRICS__ = {
+      version: VERSION,
+      token: token,
+      collector: config.host,
+      platform: config.platform,
+      headless: false,
+      ready: true,
+    };
+
     if (config.autoPageview) {
       page();
       hookSpaNavigation();

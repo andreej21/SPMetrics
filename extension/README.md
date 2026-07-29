@@ -3,14 +3,18 @@
 Checks whether the SPMetrics pixel is installed and firing on any page — the
 equivalent of Meta's Pixel Helper for your own pixel.
 
-## What it detects
-- The `sp()` global and the `px.js` script tag
-- The collector origin it's talking to
-- The first-party `sp_vid` visitor cookie
-- Every event sent to `/api/collect` in real time (type, name, whether it carries an order)
-
-The toolbar badge turns **green** when the pixel is present and shows a live
-count of events fired on the current page.
+## What it shows (Triple-Whale-style)
+- **Pixel block:** pixel id, version, platform, headless flag, collector origin,
+  and the first-party `sp_vid` visitor id — read from the `window.__SPMETRICS__`
+  object the pixel publishes on init.
+- **Events:** a live, expandable list. Each event shows an icon, a friendly label
+  ("Page Load", "Add to Cart", "Purchase"…), a **Valid / ⚠ / Invalid** status, and a
+  timestamp. Expand a row to see its **Received Parameters** (url, product, price,
+  order total, email, token).
+- **Troubleshoot** button: a pass/fail checklist (px.js loaded, sp() present,
+  initialized, cookie set, events sending).
+- **⤢ pop-out** button: opens the helper in its own resizable window.
+- The list **live-updates** every second, and the toolbar badge shows a live event count.
 
 ## Install (developer mode)
 1. Open **chrome://extensions**

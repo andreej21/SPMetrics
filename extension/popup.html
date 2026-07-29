@@ -3,36 +3,65 @@
 <head>
   <meta charset="utf-8" />
   <style>
-    :root { color-scheme: light dark; }
-    body { width: 340px; margin: 0; font: 13px/1.5 ui-sans-serif, system-ui, sans-serif; }
-    header { padding: 12px 14px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; gap: 8px; }
-    header b { font-size: 14px; }
-    .status { padding: 12px 14px; }
-    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-weight: 600; font-size: 12px; }
-    .ok { background: #dcfce7; color: #166534; }
-    .no { background: #f3f4f6; color: #6b7280; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .dot.ok { background: #16a34a; } .dot.no { background: #9ca3af; }
-    dl { margin: 12px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
-    dt { color: #6b7280; } dd { margin: 0; word-break: break-all; font-family: ui-monospace, monospace; font-size: 12px; }
-    h3 { margin: 14px 14px 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
-    ul { list-style: none; margin: 0; padding: 0 14px 14px; max-height: 180px; overflow: auto; }
-    li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
-    .type { font-family: ui-monospace, monospace; }
-    .badge { font-size: 11px; color: #2563eb; }
-    .empty { padding: 0 14px 14px; color: #9ca3af; }
-    @media (prefers-color-scheme: dark) {
-      header { border-color: #333; } li { border-color: #222; }
-      .ok { background: #14532d; color: #bbf7d0; } .no { background: #262626; color: #9ca3af; }
-    }
+    :root { color-scheme: light dark; --line:#e5e7eb; --muted:#6b7280; --bg:#fff; --fg:#0f172a; --accent:#16a34a; }
+    @media (prefers-color-scheme: dark){ :root{ --line:#2a2a2a; --muted:#9ca3af; --bg:#0b0b0c; --fg:#e5e7eb; } }
+    * { box-sizing: border-box; }
+    body { width: 380px; margin: 0; font: 13px/1.45 ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+    header.top { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+    .logo { width: 22px; height: 22px; border-radius: 5px; background: #0f172a; position: relative; flex: none; }
+    .logo::after { content:""; position:absolute; inset:6px; background:#22c55e; border-radius:2px; }
+    header.top h1 { font-size: 15px; margin: 0; font-weight: 700; flex: 1; }
+    .iconbtn { border:1px solid var(--line); background:none; color:var(--fg); border-radius:7px; width:30px; height:30px; cursor:pointer; font-size:14px; }
+    section { padding: 14px; border-bottom: 1px solid var(--line); }
+    .row2 { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    h2 { font-size: 14px; margin: 0; }
+    .btn { border:1px solid var(--line); background:none; color:var(--fg); border-radius:8px; padding:7px 12px; cursor:pointer; font-size:12px; }
+    .btn:hover { background: rgba(127,127,127,.08); }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 9px; border-radius:999px; font-weight:600; font-size:11px; }
+    .pill.ok { background:#dcfce7; color:#166534; } .pill.no { background:#f3f4f6; color:#6b7280; }
+    @media (prefers-color-scheme: dark){ .pill.ok{ background:#14532d; color:#bbf7d0; } .pill.no{ background:#1f2937; color:#9ca3af; } }
+    dl { margin: 10px 0 0; display: grid; grid-template-columns: 96px 1fr; gap: 7px 10px; }
+    dt { color: var(--muted); } dd { margin: 0; word-break: break-all; font-family: ui-monospace, monospace; font-size: 12px; }
+    h3.sec { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 8px; }
+    .ev { border:1px solid var(--line); border-radius:10px; margin-bottom:8px; overflow:hidden; }
+    .ev summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; padding:11px 12px; }
+    .ev summary::-webkit-details-marker { display:none; }
+    .ev .emoji { font-size:16px; }
+    .ev .nm { font-weight:600; flex:1; }
+    .ev .st { font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+    .st.valid { color:#16a34a; } .st.warn { color:#d97706; } .st.invalid { color:#dc2626; }
+    .ev .time { color:var(--muted); font-size:11px; display:inline-flex; gap:4px; align-items:center; }
+    .params { padding: 0 12px 12px 12px; border-top:1px solid var(--line); }
+    .params h4 { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:10px 0 6px; }
+    .diag { margin-top:10px; display:none; }
+    .diag.show { display:block; }
+    .diag li { list-style:none; display:flex; gap:8px; padding:4px 0; }
+    .empty { color: var(--muted); }
+    ul { margin:0; padding:0; }
   </style>
 </head>
 <body>
-  <header><b>SPMetrics</b> <span style="color:#9ca3af">Pixel Helper</span></header>
-  <div class="status" id="status">Checking…</div>
-  <h3>Events fired this page</h3>
-  <ul id="events"></ul>
-  <div class="empty" id="empty" hidden>No events captured yet — interact with the page.</div>
+  <header class="top">
+    <div class="logo"></div>
+    <h1>SPMetrics Pixel Helper</h1>
+    <button class="iconbtn" id="popout" title="Open in window">⤢</button>
+  </header>
+
+  <section>
+    <div class="row2">
+      <h2>Pixel</h2>
+      <button class="btn" id="troubleshoot">Troubleshoot</button>
+    </div>
+    <div id="pixelStatus"></div>
+    <ul class="diag" id="diag"></ul>
+  </section>
+
+  <section style="border-bottom:none;">
+    <h3 class="sec">Events</h3>
+    <div id="events"></div>
+    <p class="empty" id="empty" hidden>No events captured yet — interact with the page.</p>
+  </section>
+
   <script src="popup.js"></script>
 </body>
 </html>
