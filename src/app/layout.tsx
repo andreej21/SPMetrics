@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "SPMetrics",
   description: "Smart Pixel Metrics — first-party analytics & attribution",
@@ -6,7 +8,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ fontFamily: "ui-sans-serif, system-ui, sans-serif", margin: 0 }}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

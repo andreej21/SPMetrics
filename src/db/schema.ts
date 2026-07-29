@@ -275,7 +275,7 @@ export const adSpend = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    uniq: uniqueIndex("ad_spend_uniq_idx").on(t.siteId, t.provider, t.day, t.campaignId),
+    uniq: uniqueIndex("ad_spend_uniq_idx").on(t.siteId, t.provider, t.day, t.channel, t.campaignId),
     siteDayIdx: index("ad_spend_site_day_idx").on(t.siteId, t.day),
   }),
 );

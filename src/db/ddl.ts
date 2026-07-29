@@ -140,6 +140,7 @@ CREATE TABLE IF NOT EXISTS ad_spend (
   currency text NOT NULL DEFAULT 'USD',
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX IF NOT EXISTS ad_spend_uniq_idx ON ad_spend (site_id, provider, day, campaign_id);
+DROP INDEX IF EXISTS ad_spend_uniq_idx;
+CREATE UNIQUE INDEX IF NOT EXISTS ad_spend_uniq_idx ON ad_spend (site_id, provider, day, channel, campaign_id);
 CREATE INDEX IF NOT EXISTS ad_spend_site_day_idx ON ad_spend (site_id, day);
 `;

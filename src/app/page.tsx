@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const SNIPPET = `<script>
   !function(){window.sp=window.sp||function(){(sp.q=sp.q||[]).push(arguments)};
   var s=document.createElement('script');s.async=1;s.src='COLLECTOR/px.js';
@@ -5,49 +7,69 @@ const SNIPPET = `<script>
   sp('init','YOUR_PIXEL_TOKEN');
 </script>`;
 
+const box: React.CSSProperties = {
+  background: "var(--surface-2)",
+  border: "1px solid var(--border)",
+  padding: 16,
+  borderRadius: 10,
+  overflowX: "auto",
+  fontSize: 12.5,
+  lineHeight: 1.6,
+  fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+};
+
 export default function Home() {
   const origin = process.env.NEXT_PUBLIC_COLLECTOR_ORIGIN || "http://localhost:3000";
   return (
-    <main style={{ maxWidth: 760, margin: "48px auto", padding: "0 20px", lineHeight: 1.6 }}>
-      <h1 style={{ marginBottom: 4 }}>SPMetrics</h1>
-      <p style={{ color: "#666", marginTop: 0 }}>Smart Pixel Metrics — first-party analytics &amp; attribution.</p>
-      <p>
-        <a href="/dashboard" style={{ display: "inline-block", background: "#0f172a", color: "#fff", padding: "8px 16px", borderRadius: 8, textDecoration: "none" }}>
-          Open dashboard →
-        </a>
-      </p>
+    <>
+      <header className="topbar">
+        <span className="brand"><span className="mark" /> SPMetrics <small>Smart Pixel Metrics</small></span>
+        <span className="spacer" />
+        <Link href="/dashboard" className="seg"><span className="active">Dashboard</span></Link>
+      </header>
 
-      <h2>Install</h2>
-      <p>Paste this in your storefront&apos;s <code>&lt;head&gt;</code>:</p>
-      <pre style={box}>{SNIPPET.replace("COLLECTOR", origin)}</pre>
+      <main className="container" style={{ maxWidth: 760 }}>
+        <div style={{ margin: "12px 0 28px" }}>
+          <span className="pill"><span className="dot" /> First-party pixel</span>
+          <h1 style={{ fontSize: 30, letterSpacing: "-0.03em", margin: "16px 0 8px" }}>
+            Know which ad actually made the sale.
+          </h1>
+          <p className="muted" style={{ fontSize: 15, maxWidth: 560 }}>
+            A first-party analytics &amp; attribution pixel that survives ITP and ad-blockers, stitches every click to
+            its order, and joins your ad spend for true ROAS.
+          </p>
+          <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
+            <Link href="/dashboard" style={{ background: "var(--ink)", color: "var(--plane)", padding: "10px 18px", borderRadius: 8, fontWeight: 600 }}>
+              Open dashboard →
+            </Link>
+            <Link href="/shop.html" style={{ border: "1px solid var(--border)", padding: "10px 18px", borderRadius: 8, fontWeight: 600, color: "var(--ink)" }}>
+              Try the test store
+            </Link>
+          </div>
+        </div>
 
-      <h2>Track events</h2>
-      <pre style={box}>{`sp('page');                       // page view (auto-fired)
+        <div className="card">
+          <h3 className="sec-title">Install</h3>
+          <p style={{ marginTop: 0 }}>Paste in your storefront&apos;s <code>&lt;head&gt;</code>:</p>
+          <pre style={box}>{SNIPPET.replace("COLLECTOR", origin)}</pre>
+        </div>
+
+        <div className="card">
+          <h3 className="sec-title">Track events</h3>
+          <pre style={box}>{`sp('page');                       // page view (auto-fired)
 sp('identify', { email: 'a@b.com' });
 sp('track', 'product_view', { productId: 'SKU-1', price: 4999 });
 sp('track', 'add_to_cart', { productId: 'SKU-1', qty: 1 });
 sp('track', 'purchase', {
   order: { externalOrderId: '1001', totalAmount: 4999, currency: 'USD' }
 });`}</pre>
+        </div>
 
-      <h2>Try it</h2>
-      <p>
-        Full test store with dummy products, cart &amp; checkout:{" "}
-        <a href="/shop.html">/shop.html</a> — buy something, then watch it appear on the{" "}
-        <a href="/dashboard">dashboard</a>. Add <code>?utm_source=facebook&amp;fbclid=123</code> to the URL to test attribution.
-      </p>
-      <p>
-        Minimal button-only demo: <a href="/demo.html">/demo.html</a>.
-      </p>
-    </main>
+        <p className="foot">
+          Test store: <Link href="/shop.html">/shop.html</Link> · minimal demo: <Link href="/demo.html">/demo.html</Link> ·
+          add <code>?utm_source=facebook&amp;fbclid=123</code> to test attribution.
+        </p>
+      </main>
+    </>
   );
 }
-
-const box: React.CSSProperties = {
-  background: "#0f172a",
-  color: "#e2e8f0",
-  padding: 16,
-  borderRadius: 8,
-  overflowX: "auto",
-  fontSize: 13,
-};

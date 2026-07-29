@@ -41,7 +41,7 @@ export async function upsertSpend(siteId: string, rows: SpendRow[]): Promise<num
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
-        target: [schema.adSpend.siteId, schema.adSpend.provider, schema.adSpend.day, schema.adSpend.campaignId],
+        target: [schema.adSpend.siteId, schema.adSpend.provider, schema.adSpend.day, schema.adSpend.channel, schema.adSpend.campaignId],
         set: {
           channel: r.channel,
           source: r.source ?? null,

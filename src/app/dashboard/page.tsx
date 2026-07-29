@@ -11,21 +11,17 @@ import {
 
 export const dynamic = "force-dynamic";
 
-// Channel → accent color for the bars.
-function channelColor(ch: string): string {
-  if (/facebook|meta|instagram/i.test(ch)) return "#1877f2";
-  if (/google/i.test(ch)) return "#ea4335";
-  if (/tiktok/i.test(ch)) return "#000000";
-  if (/direct/i.test(ch)) return "#64748b";
-  if (/paid/i.test(ch)) return "#7c3aed";
-  return "#0ea5e9";
-}
+const RANGES = [7, 30, 90];
 
 function money(minor: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(minor / 100);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: minor % 100 === 0 ? 0 : 2 }).format(minor / 100);
 }
-
-const RANGES = [7, 30, 90];
+const fmtRoas = (r: number | null) => (r == null ? "—" : r.toFixed(2) + "×");
+function roasClass(r: number | null): string {
+  if (r == null) return "muted";
+  if (r >= 1) return "good";
+  return "bad";
+}
 
 export default async function Dashboard({
   searchParams,
@@ -38,11 +34,10 @@ export default async function Dashboard({
   if (sites.length === 0) {
     return (
       <Shell>
-        <div style={card}>
+        <div className="card">
           <h2 style={{ marginTop: 0 }}>No sites yet</h2>
-          <p style={{ color: muted }}>
-            Register one with <code>npm run site:create -- --name &quot;My Store&quot;</code>, install the pixel, then
-            refresh.
+          <p className="muted">
+            Register one with <code>npm run site:create -- --name &quot;My Store&quot;</code>, install the pixel, then refresh.
           </p>
         </div>
       </Shell>
@@ -64,106 +59,58 @@ export default async function Dashboard({
 
   const maxChannelRev = Math.max(1, ...channels.map((c) => c.revenue));
   const blendedRoas = spendTotal > 0 ? summary.revenue / spendTotal : null;
-  const fmtRoas = (r: number | null) => (r == null ? "—" : r.toFixed(2) + "×");
+  const hasSpend = roas.some((r) => r.spend > 0);
 
   return (
-    <Shell>
-      {/* Controls */}
-      <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap", marginBottom: 20 }}>
-        <div>
-          <label style={{ color: muted, fontSize: 12, marginRight: 8 }}>Site</label>
-          {sites.map((s) => (
-            <Link
-              key={s.id}
-              href={`/dashboard?site=${s.id}&days=${days}`}
-              style={{ ...chip, ...(s.id === siteId ? chipActive : {}) }}
-            >
-              {s.name}
-            </Link>
-          ))}
-        </div>
-        <div style={{ marginLeft: "auto" }}>
-          <label style={{ color: muted, fontSize: 12, marginRight: 8 }}>Range</label>
-          {RANGES.map((d) => (
-            <Link
-              key={d}
-              href={`/dashboard?site=${siteId}&days=${d}`}
-              style={{ ...chip, ...(d === days ? chipActive : {}) }}
-            >
-              {d}d
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 20 }}>
+    <Shell
+      controls={
+        <>
+          <span className="label-inline">Site</span>
+          <span className="seg">
+            {sites.map((s) => (
+              <Link key={s.id} href={`/dashboard?site=${s.id}&days=${days}`} className={s.id === siteId ? "active" : ""}>
+                {s.name}
+              </Link>
+            ))}
+          </span>
+          <span className="spacer" />
+          <span className="seg">
+            {RANGES.map((d) => (
+              <Link key={d} href={`/dashboard?site=${siteId}&days=${d}`} className={d === days ? "active" : ""}>
+                {d}d
+              </Link>
+            ))}
+          </span>
+        </>
+      }
+    >
+      {/* KPIs */}
+      <div className="kpi-grid">
         <Kpi label="Revenue" value={money(summary.revenue)} />
         <Kpi label="Ad spend" value={money(spendTotal)} />
-        <Kpi label="Blended ROAS" value={fmtRoas(blendedRoas)} accent />
+        <Kpi label="Blended ROAS" value={fmtRoas(blendedRoas)} hero />
         <Kpi label="Orders" value={String(summary.orders)} />
-        <Kpi label="Conversion rate" value={`${(summary.conversionRate * 100).toFixed(2)}%`} />
+        <Kpi label="Conv. rate" value={`${(summary.conversionRate * 100).toFixed(2)}%`} />
         <Kpi label="Avg order value" value={money(summary.aov)} />
       </div>
 
-      {/* Ad spend & ROAS */}
-      <div style={card}>
-        <h3 style={h3}>Ad spend &amp; ROAS by channel</h3>
-        {roas.every((r) => r.spend === 0) ? (
-          <p style={{ color: muted }}>
-            No ad spend loaded yet. Add some with{" "}
-            <code>npm run spend:add -- --token pk_... --channel &quot;facebook / paid&quot; --day {sinceStrToday()} --spend 50</code>{" "}
-            or connect Meta with <code>npm run spend:meta</code>.
-          </p>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr>
-                {["Channel", "Spend", "Revenue", "ROAS", "Orders"].map((h, i) => (
-                  <th key={h} style={{ textAlign: i === 0 ? "left" : "right", color: muted, fontWeight: 500, padding: "6px 0" }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {roas.map((r) => (
-                <tr key={r.channel} style={{ borderTop: "1px solid #f1f5f9" }}>
-                  <td style={{ padding: "7px 0" }}>{r.channel}</td>
-                  <td style={cellNum}>{r.spend > 0 ? money(r.spend) : "—"}</td>
-                  <td style={cellNum}>{money(r.revenue)}</td>
-                  <td style={{ ...cellNum, fontWeight: 700, color: roasColor(r.roas) }}>{fmtRoas(r.roas)}</td>
-                  <td style={cellNum}>{r.orders}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Revenue by channel */}
-      <div style={card}>
-        <h3 style={h3}>Revenue by channel</h3>
+      {/* Revenue by channel — single hue: category identity is on the label */}
+      <div className="card">
+        <h3 className="sec-title">Revenue by channel</h3>
         {channels.length === 0 ? (
-          <p style={{ color: muted }}>No orders in this range yet.</p>
+          <p className="muted">No orders in this range yet.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="bars">
             {channels.map((c) => (
-              <div key={c.channel}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 3 }}>
+              <div className="bar-row" key={c.channel}>
+                <div className="bar-head">
                   <span>{c.channel}</span>
-                  <span style={{ color: muted }}>
+                  <span className="val">
                     {money(c.revenue)} · {c.orders} order{c.orders === 1 ? "" : "s"}
                   </span>
                 </div>
-                <div style={{ background: "#f1f5f9", borderRadius: 6, height: 12, overflow: "hidden" }}>
-                  <div
-                    style={{
-                      width: `${(c.revenue / maxChannelRev) * 100}%`,
-                      background: channelColor(c.channel),
-                      height: "100%",
-                    }}
-                  />
+                <div className="bar-track">
+                  <div className="bar-fill" style={{ width: `${Math.max(2, (c.revenue / maxChannelRev) * 100)}%` }} />
                 </div>
               </div>
             ))}
@@ -171,98 +118,92 @@ export default async function Dashboard({
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, marginTop: 16 }}>
-        {/* Top campaigns */}
-        <div style={card}>
-          <h3 style={h3}>Top campaigns</h3>
-          <Table
-            head={["Campaign", "Revenue", "Orders"]}
-            rows={campaigns.map((c) => [c.campaign, money(c.revenue), String(c.orders)])}
-            empty="No campaign data yet."
-          />
-        </div>
+      {/* Ad spend & ROAS */}
+      <div className="card">
+        <h3 className="sec-title">Ad spend &amp; ROAS by channel</h3>
+        {!hasSpend ? (
+          <p className="muted">
+            No ad spend loaded. Add some with <code>npm run spend:add</code> or connect Meta with <code>npm run spend:meta</code>.
+          </p>
+        ) : (
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Channel</th><th>Spend</th><th>Revenue</th><th>ROAS</th><th>Orders</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roas.map((r) => (
+                <tr key={r.channel}>
+                  <td>{r.channel}</td>
+                  <td>{r.spend > 0 ? money(r.spend) : "—"}</td>
+                  <td>{money(r.revenue)}</td>
+                  <td className={roasClass(r.roas)} style={{ fontWeight: 700 }}>{fmtRoas(r.roas)}</td>
+                  <td>{r.orders}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
-        {/* Recent orders */}
-        <div style={card}>
-          <h3 style={h3}>Recent orders</h3>
-          <Table
-            head={["Order", "Amount", "Attributed to"]}
-            rows={orders.map((o) => [o.orderNumber ?? o.id.slice(0, 10), money(o.totalAmount, o.currency), o.channel ?? "—"])}
-            empty="No orders yet."
-          />
+      <div className="grid-2">
+        <div className="card">
+          <h3 className="sec-title">Top campaigns</h3>
+          <Table head={["Campaign", "Revenue", "Orders"]} rows={campaigns.map((c) => [c.campaign, money(c.revenue), String(c.orders)])} empty="No campaign data yet." />
+        </div>
+        <div className="card">
+          <h3 className="sec-title">Recent orders</h3>
+          <Table head={["Order", "Amount", "Attributed to"]} rows={orders.map((o) => [o.orderNumber ?? o.id.slice(0, 10), money(o.totalAmount, o.currency), o.channel ?? "—"])} empty="No orders yet." />
         </div>
       </div>
 
-      <p style={{ color: muted, fontSize: 12, marginTop: 20 }}>
-        Showing <b>{site.name}</b>{site.domain ? ` (${site.domain})` : ""} · last {days} days · revenue attributed on a
-        last-non-direct-click basis.
+      <p className="foot">
+        <b>{site.name}</b>{site.domain ? ` · ${site.domain}` : ""} · last {days} days · last-non-direct-click attribution.
       </p>
     </Shell>
   );
 }
 
-/* ── little presentational helpers ───────────────────────────── */
-const muted = "#64748b";
-const card: React.CSSProperties = { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: 18 };
-const h3: React.CSSProperties = { margin: "0 0 12px", fontSize: 13, textTransform: "uppercase", letterSpacing: ".04em", color: muted };
-const chip: React.CSSProperties = { display: "inline-block", padding: "5px 12px", marginRight: 6, borderRadius: 999, border: "1px solid #e5e7eb", color: "#0f172a", textDecoration: "none", fontSize: 13 };
-const chipActive: React.CSSProperties = { background: "#0f172a", color: "#fff", borderColor: "#0f172a" };
-const cellNum: React.CSSProperties = { textAlign: "right", padding: "7px 0", fontFamily: "ui-monospace, monospace" };
-
-function roasColor(r: number | null): string {
-  if (r == null) return muted;
-  if (r >= 3) return "#16a34a"; // strong
-  if (r >= 1) return "#0f172a"; // profitable-ish
-  return "#dc2626"; // losing money
-}
-
-function sinceStrToday(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, controls }: { children: React.ReactNode; controls?: React.ReactNode }) {
   return (
-    <main style={{ maxWidth: 980, margin: "32px auto", padding: "0 20px", color: "#0f172a" }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 20 }}>
-        <h1 style={{ margin: 0, fontSize: 22 }}>SPMetrics</h1>
-        <span style={{ color: muted }}>Attribution dashboard</span>
-      </div>
-      {children}
-    </main>
+    <>
+      <header className="topbar">
+        <Link href="/" className="brand" style={{ color: "inherit" }}>
+          <span className="mark" />
+          SPMetrics <small>Attribution</small>
+        </Link>
+      </header>
+      <main className="container">
+        <div className="page-h">
+          <h1>Overview</h1>
+        </div>
+        {controls && <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 18 }}>{controls}</div>}
+        {children}
+      </main>
+    </>
   );
 }
 
-function Kpi({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function Kpi({ label, value, hero }: { label: string; value: string; hero?: boolean }) {
   return (
-    <div style={{ ...card, ...(accent ? { borderColor: "#16a34a", borderWidth: 2 } : {}) }}>
-      <div style={{ color: muted, fontSize: 12, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: accent ? "#16a34a" : undefined }}>{value}</div>
+    <div className={`kpi${hero ? " hero" : ""}`}>
+      <div className="k-label">{label}</div>
+      <div className="k-value">{value}</div>
     </div>
   );
 }
 
 function Table({ head, rows, empty }: { head: string[]; rows: string[][]; empty: string }) {
-  if (rows.length === 0) return <p style={{ color: muted }}>{empty}</p>;
+  if (rows.length === 0) return <p className="muted">{empty}</p>;
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+    <table className="tbl">
       <thead>
-        <tr>
-          {head.map((h, i) => (
-            <th key={h} style={{ textAlign: i === 0 ? "left" : "right", color: muted, fontWeight: 500, padding: "4px 0" }}>
-              {h}
-            </th>
-          ))}
-        </tr>
+        <tr>{head.map((h) => <th key={h}>{h}</th>)}</tr>
       </thead>
       <tbody>
         {rows.map((r, ri) => (
-          <tr key={ri} style={{ borderTop: "1px solid #f1f5f9" }}>
-            {r.map((cell, ci) => (
-              <td key={ci} style={{ textAlign: ci === 0 ? "left" : "right", padding: "6px 0", fontFamily: ci === 0 ? "inherit" : "ui-monospace, monospace" }}>
-                {cell}
-              </td>
-            ))}
-          </tr>
+          <tr key={ri}>{r.map((cell, ci) => <td key={ci}>{cell}</td>)}</tr>
         ))}
       </tbody>
     </table>
