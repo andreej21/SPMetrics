@@ -1,5 +1,8 @@
 import Link from "next/link";
 import {
+  House,
+  Storefront,
+  Code,
   Wallet,
   Megaphone,
   TrendUp,
@@ -17,8 +20,11 @@ import {
   getRecentOrders,
   getRoasByChannel,
   getSpendTotal,
+  getRevenueTimeseries,
+  getPrevPeriod,
   listSites,
 } from "@/lib/analytics";
+import RevenueChart from "./RevenueChart";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +40,21 @@ function roasClass(r: number | null): string {
   return "bad";
 }
 
+function Delta({ cur, prev, neutral }: { cur: number; prev: number; neutral?: boolean }) {
+  if (prev <= 0) {
+    if (cur > 0) return <div className="k-delta up">New</div>;
+    return <div className="k-delta flat">—</div>;
+  }
+  const d = (cur - prev) / prev;
+  const up = d >= 0;
+  const cls = neutral ? "flat" : up ? "up" : "down";
+  return (
+    <div className={`k-delta ${cls}`}>
+      {up ? "▲" : "▼"} {Math.abs(d * 100).toFixed(0)}% <span className="muted" style={{ fontWeight: 500 }}>vs prev</span>
+    </div>
+  );
+}
+
 export default async function Dashboard({
   searchParams,
 }: {
@@ -44,7 +65,7 @@ export default async function Dashboard({
 
   if (sites.length === 0) {
     return (
-      <Shell>
+      <Shell sites={[]} siteId="" days={30}>
         <div className="card">
           <h2 style={{ marginTop: 0 }}>No sites yet</h2>
           <p className="muted">
@@ -59,153 +80,173 @@ export default async function Dashboard({
   const days = RANGES.includes(Number(sp.days)) ? Number(sp.days) : 30;
   const site = sites.find((s) => s.id === siteId)!;
 
-  const [summary, channels, campaigns, orders, roas, spendTotal] = await Promise.all([
+  const [summary, channels, campaigns, orders, roas, spendTotal, series, prev] = await Promise.all([
     getSummary(siteId, days),
     getRevenueByChannel(siteId, days),
     getTopCampaigns(siteId, days),
     getRecentOrders(siteId),
     getRoasByChannel(siteId, days),
     getSpendTotal(siteId, days),
+    getRevenueTimeseries(siteId, days),
+    getPrevPeriod(siteId, days),
   ]);
 
   const maxChannelRev = Math.max(1, ...channels.map((c) => c.revenue));
   const blendedRoas = spendTotal > 0 ? summary.revenue / spendTotal : null;
+  const prevRoas = prev.spend > 0 ? prev.revenue / prev.spend : 0;
   const hasSpend = roas.some((r) => r.spend > 0);
 
   return (
-    <Shell
-      controls={
-        <>
-          <span className="label-inline">Site</span>
-          <span className="seg">
-            {sites.map((s) => (
-              <Link key={s.id} href={`/dashboard?site=${s.id}&days=${days}`} className={s.id === siteId ? "active" : ""}>
-                {s.name}
-              </Link>
-            ))}
-          </span>
-          <span className="spacer" />
-          <span className="seg">
-            {RANGES.map((d) => (
-              <Link key={d} href={`/dashboard?site=${siteId}&days=${d}`} className={d === days ? "active" : ""}>
-                {d}d
-              </Link>
-            ))}
-          </span>
-        </>
-      }
-    >
-      {/* KPIs */}
-      <div className="kpi-grid">
-        <Kpi label="Revenue" value={money(summary.revenue)} icon={<Wallet size={16} weight="bold" />} />
-        <Kpi label="Ad spend" value={money(spendTotal)} icon={<Megaphone size={16} weight="bold" />} />
-        <Kpi label="Blended ROAS" value={fmtRoas(blendedRoas)} icon={<TrendUp size={16} weight="bold" />} hero />
-        <Kpi label="Orders" value={String(summary.orders)} icon={<ShoppingBag size={16} weight="bold" />} />
-        <Kpi label="Conv. rate" value={`${(summary.conversionRate * 100).toFixed(2)}%`} icon={<Target size={16} weight="bold" />} />
-        <Kpi label="Avg order value" value={money(summary.aov)} icon={<Receipt size={16} weight="bold" />} />
+    <Shell sites={sites} siteId={siteId} days={days}>
+      <div className="topbar">
+        <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", margin: 0 }}>Overview</h1>
+        <span className="muted" style={{ fontSize: 13 }}>{site.name}</span>
+        <span className="spacer" />
+        <span className="seg">
+          {RANGES.map((d) => (
+            <Link key={d} href={`/dashboard?site=${siteId}&days=${d}`} className={d === days ? "active" : ""}>
+              {d}d
+            </Link>
+          ))}
+        </span>
       </div>
 
-      {/* Revenue by channel — single hue: category identity is on the label */}
-      <div className="card">
-        <h3 className="sec-title"><ChartBar size={14} weight="bold" /> Revenue by channel</h3>
-        {channels.length === 0 ? (
-          <p className="muted">No orders in this range yet.</p>
-        ) : (
-          <div className="bars">
-            {channels.map((c) => (
-              <div className="bar-row" key={c.channel}>
-                <div className="bar-head">
-                  <span>{c.channel}</span>
-                  <span className="val">
-                    {money(c.revenue)} · {c.orders} order{c.orders === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <div className="bar-track">
-                  <div className="bar-fill" style={{ width: `${Math.max(2, (c.revenue / maxChannelRev) * 100)}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <div className="container">
+        {/* KPIs with deltas vs previous period */}
+        <div className="kpi-grid">
+          <Kpi label="Revenue" value={money(summary.revenue)} icon={<Wallet size={16} weight="bold" />} delta={<Delta cur={summary.revenue} prev={prev.revenue} />} />
+          <Kpi label="Ad spend" value={money(spendTotal)} icon={<Megaphone size={16} weight="bold" />} delta={<Delta cur={spendTotal} prev={prev.spend} neutral />} />
+          <Kpi label="Blended ROAS" value={fmtRoas(blendedRoas)} icon={<TrendUp size={16} weight="bold" />} hero delta={<Delta cur={blendedRoas ?? 0} prev={prevRoas} />} />
+          <Kpi label="Orders" value={String(summary.orders)} icon={<ShoppingBag size={16} weight="bold" />} delta={<Delta cur={summary.orders} prev={prev.orders} />} />
+          <Kpi label="Conv. rate" value={`${(summary.conversionRate * 100).toFixed(1)}%`} icon={<Target size={16} weight="bold" />} />
+          <Kpi label="Avg order value" value={money(summary.aov)} icon={<Receipt size={16} weight="bold" />} />
+        </div>
 
-      {/* Ad spend & ROAS */}
-      <div className="card">
-        <h3 className="sec-title"><ChartLineUp size={14} weight="bold" /> Ad spend &amp; ROAS by channel</h3>
-        {!hasSpend ? (
-          <p className="muted">
-            No ad spend loaded. Add some with <code>npm run spend:add</code> or connect Meta with <code>npm run spend:meta</code>.
-          </p>
-        ) : (
-          <div className="tbl-wrap">
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Channel</th><th>Spend</th><th>Revenue</th><th>ROAS</th><th>Orders</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roas.map((r) => (
-                  <tr key={r.channel}>
-                    <td>{r.channel}</td>
-                    <td>{r.spend > 0 ? money(r.spend) : "—"}</td>
-                    <td>{money(r.revenue)}</td>
-                    <td className={roasClass(r.roas)} style={{ fontWeight: 700 }}>{fmtRoas(r.roas)}</td>
-                    <td>{r.orders}</td>
-                  </tr>
+        {/* Hero: revenue over time */}
+        <div className="card">
+          <h3 className="sec-title"><ChartLineUp size={14} weight="bold" /> Revenue over time</h3>
+          <RevenueChart points={series} />
+        </div>
+
+        <div className="grid-2">
+          {/* Revenue by channel */}
+          <div className="card">
+            <h3 className="sec-title"><ChartBar size={14} weight="bold" /> Revenue by channel</h3>
+            {channels.length === 0 ? (
+              <p className="muted">No orders in this range yet.</p>
+            ) : (
+              <div className="bars">
+                {channels.map((c) => (
+                  <div className="bar-row" key={c.channel}>
+                    <div className="bar-head">
+                      <span>{c.channel}</span>
+                      <span className="val">{money(c.revenue)} · {c.orders}</span>
+                    </div>
+                    <div className="bar-track">
+                      <div className="bar-fill" style={{ width: `${Math.max(2, (c.revenue / maxChannelRev) * 100)}%` }} />
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="grid-2">
-        <div className="card">
-          <h3 className="sec-title"><Rocket size={14} weight="bold" /> Top campaigns</h3>
-          <Table head={["Campaign", "Revenue", "Orders"]} rows={campaigns.map((c) => [c.campaign, money(c.revenue), String(c.orders)])} empty="No campaign data yet." />
+          {/* Ad spend & ROAS */}
+          <div className="card">
+            <h3 className="sec-title"><TrendUp size={14} weight="bold" /> Ad spend &amp; ROAS</h3>
+            {!hasSpend ? (
+              <p className="muted">No ad spend loaded. Add with <code>npm run spend:add</code> or <code>spend:meta</code>.</p>
+            ) : (
+              <div className="tbl-wrap">
+                <table className="tbl">
+                  <thead>
+                    <tr><th>Channel</th><th>Spend</th><th>Revenue</th><th>ROAS</th></tr>
+                  </thead>
+                  <tbody>
+                    {roas.map((r) => (
+                      <tr key={r.channel}>
+                        <td>{r.channel}</td>
+                        <td>{r.spend > 0 ? money(r.spend) : "—"}</td>
+                        <td>{money(r.revenue)}</td>
+                        <td className={roasClass(r.roas)} style={{ fontWeight: 700 }}>{fmtRoas(r.roas)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="card">
-          <h3 className="sec-title"><ShoppingBag size={14} weight="bold" /> Recent orders</h3>
-          <Table head={["Order", "Amount", "Attributed to"]} rows={orders.map((o) => [o.orderNumber ?? o.id.slice(0, 10), money(o.totalAmount, o.currency), o.channel ?? "—"])} empty="No orders yet." />
-        </div>
-      </div>
 
-      <p className="foot">
-        <b>{site.name}</b>{site.domain ? ` · ${site.domain}` : ""} · last {days} days · last-non-direct-click attribution.
-      </p>
+        <div className="grid-2">
+          <div className="card">
+            <h3 className="sec-title"><Rocket size={14} weight="bold" /> Top campaigns</h3>
+            <Table head={["Campaign", "Revenue", "Orders"]} rows={campaigns.map((c) => [c.campaign, money(c.revenue), String(c.orders)])} empty="No campaign data yet." />
+          </div>
+          <div className="card">
+            <h3 className="sec-title"><ShoppingBag size={14} weight="bold" /> Recent orders</h3>
+            <Table head={["Order", "Amount", "Attributed to"]} rows={orders.map((o) => [o.orderNumber ?? o.id.slice(0, 10), money(o.totalAmount, o.currency), o.channel ?? "—"])} empty="No orders yet." />
+          </div>
+        </div>
+
+        <p className="foot">
+          <b>{site.name}</b>{site.domain ? ` · ${site.domain}` : ""} · last {days} days · last-non-direct-click attribution.
+        </p>
+      </div>
     </Shell>
   );
 }
 
-function Shell({ children, controls }: { children: React.ReactNode; controls?: React.ReactNode }) {
+function Shell({
+  children,
+  sites,
+  siteId,
+  days,
+}: {
+  children: React.ReactNode;
+  sites: { id: string; name: string }[];
+  siteId: string;
+  days: number;
+}) {
   return (
-    <>
-      <header className="topbar">
-        <Link href="/" className="brand" style={{ color: "inherit" }}>
-          <span className="mark" />
-          SPMetrics <small>Attribution</small>
-        </Link>
-      </header>
-      <main className="container">
-        <div className="page-h">
-          <h1>Overview</h1>
+    <div className="app">
+      <aside className="sidebar">
+        <span className="brand"><span className="mark" /> SPMetrics</span>
+
+        <div className="side-group">
+          <div className="side-label">Views</div>
+          <Link href={`/dashboard?site=${siteId}&days=${days}`} className="nav-item active"><House size={17} weight="bold" /> Overview</Link>
+          <Link href="/" className="nav-item"><Code size={17} weight="bold" /> Install</Link>
         </div>
-        {controls && <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: 18 }}>{controls}</div>}
-        {children}
-      </main>
-    </>
+
+        {sites.length > 0 && (
+          <div className="side-group">
+            <div className="side-label">Sites</div>
+            {sites.map((s) => (
+              <Link key={s.id} href={`/dashboard?site=${s.id}&days=${days}`} className={`nav-item${s.id === siteId ? " active" : ""}`}>
+                <Storefront size={17} weight="bold" /> {s.name}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <div className="side-foot">SPMetrics · Smart Pixel Metrics</div>
+      </aside>
+
+      <div className="main">{children}</div>
+    </div>
   );
 }
 
-function Kpi({ label, value, icon, hero }: { label: string; value: string; icon?: React.ReactNode; hero?: boolean }) {
+function Kpi({ label, value, icon, hero, delta }: { label: string; value: string; icon?: React.ReactNode; hero?: boolean; delta?: React.ReactNode }) {
   return (
     <div className={`kpi${hero ? " hero" : ""}`}>
       <div className="k-top">
         <div className="k-label">{label}</div>
-        {icon && <span className="k-icon">{icon}</span>}
+        {icon && <div className="k-icon">{icon}</div>}
       </div>
       <div className="k-value">{value}</div>
+      {delta}
     </div>
   );
 }

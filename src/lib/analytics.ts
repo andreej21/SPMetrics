@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
 import { getDb, schema } from "@/db/client";
 
 /**
@@ -171,6 +171,56 @@ export async function getRoasByChannel(siteId: string, days: number): Promise<Ro
   }));
   // Paid channels (with spend) first, then by revenue.
   return rows.sort((a, b) => b.spend - a.spend || b.revenue - a.revenue);
+}
+
+// Daily revenue/orders for the range, with zero-filled gaps so the chart is continuous.
+export type DayPoint = { day: string; revenue: number; orders: number };
+export async function getRevenueTimeseries(siteId: string, days: number): Promise<DayPoint[]> {
+  const db = await getDb();
+  const from = since(days);
+  const rows = await db
+    .select({
+      day: sql<string>`to_char(date_trunc('day', ${schema.orders.placedAt}), 'YYYY-MM-DD')`,
+      revenue: sql<number>`coalesce(sum(${schema.orders.totalAmount}), 0)`,
+      orders: sql<number>`count(*)`,
+    })
+    .from(schema.orders)
+    .where(and(eq(schema.orders.siteId, siteId), gte(schema.orders.placedAt, from)))
+    .groupBy(sql`date_trunc('day', ${schema.orders.placedAt})`);
+
+  const byDay = new Map(rows.map((r) => [r.day, { revenue: Number(r.revenue), orders: Number(r.orders) }]));
+  const out: DayPoint[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const v = byDay.get(d);
+    out.push({ day: d, revenue: v?.revenue ?? 0, orders: v?.orders ?? 0 });
+  }
+  return out;
+}
+
+// Prior equal-length window, for KPI deltas ("vs previous 30d").
+export type PrevPeriod = { revenue: number; orders: number; spend: number };
+export async function getPrevPeriod(siteId: string, days: number): Promise<PrevPeriod> {
+  const db = await getDb();
+  const to = since(days);
+  const from = since(days * 2);
+
+  const [ord] = await db
+    .select({
+      revenue: sql<number>`coalesce(sum(${schema.orders.totalAmount}), 0)`,
+      orders: sql<number>`count(*)`,
+    })
+    .from(schema.orders)
+    .where(and(eq(schema.orders.siteId, siteId), gte(schema.orders.placedAt, from), lt(schema.orders.placedAt, to)));
+
+  const fromStr = from.toISOString().slice(0, 10);
+  const toStr = to.toISOString().slice(0, 10);
+  const [sp] = await db
+    .select({ spend: sql<number>`coalesce(sum(${schema.adSpend.spend}), 0)` })
+    .from(schema.adSpend)
+    .where(and(eq(schema.adSpend.siteId, siteId), gte(schema.adSpend.day, fromStr), lt(schema.adSpend.day, toStr)));
+
+  return { revenue: Number(ord?.revenue ?? 0), orders: Number(ord?.orders ?? 0), spend: Number(sp?.spend ?? 0) };
 }
 
 export async function listSites() {
