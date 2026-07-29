@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo Store — SPMetrics</title>
+  <!-- SPMetrics loader snippet -->
+  <script>
+    !function(){window.sp=window.sp||function(){(sp.q=sp.q||[]).push(arguments)};
+    var s=document.createElement('script');s.async=1;s.src='/px.js';
+    document.head.appendChild(s);}();
+    sp('init','pk_dev_demo');
+  </script>
+  <style>
+    body{font-family:ui-sans-serif,system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;line-height:1.6}
+    button{padding:10px 14px;margin:4px 6px 4px 0;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;cursor:pointer}
+    button:hover{background:#eef2f7}
+    code{background:#f1f5f9;padding:1px 5px;border-radius:4px}
+    #log{background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;height:180px;overflow:auto;font-size:12px;white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <h1>Demo Store</h1>
+  <p>Pixel token <code>pk_dev_demo</code>. Click to fire events, then check the collector.</p>
+
+  <button onclick="sp('track','product_view',{productId:'SKU-1',title:'Blue Tee',price:2999}); log('product_view SKU-1')">View product</button>
+  <button onclick="sp('track','add_to_cart',{productId:'SKU-1',qty:1,price:2999}); log('add_to_cart SKU-1')">Add to cart</button>
+  <button onclick="sp('identify',{email:'shopper@example.com'}); log('identify shopper@example.com')">Identify</button>
+  <button onclick="sp('track','checkout_started',{value:2999}); log('checkout_started')">Start checkout</button>
+  <button onclick="buy()">Purchase</button>
+
+  <h3>Client log</h3>
+  <div id="log"></div>
+
+  <script>
+    function log(m){var el=document.getElementById('log');el.textContent+='• '+m+'\n';el.scrollTop=el.scrollHeight}
+    function buy(){
+      var id='demo-'+Date.now();
+      sp('track','purchase',{ _id:id, order:{ externalOrderId:id, orderNumber:id, totalAmount:2999, currency:'USD', lineItems:[{productId:'SKU-1',title:'Blue Tee',quantity:1,price:2999}] }});
+      log('purchase '+id+' ($29.99)');
+    }
+    log('pixel loaded — auto page_view fired');
+  </script>
+</body>
+</html>

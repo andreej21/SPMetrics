@@ -1,0 +1,22 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Local env
+.env
+.env.local
+.env*.local
+
+# Local PGlite dev database
+.pgdata/
+
+# Build output for the pixel bundle
+public/px.js
+public/px.js.map
+
+# Logs / misc
+*.log
+.DS_Store
+Thumbs.db

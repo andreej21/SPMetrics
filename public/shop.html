@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dummy Shop — SPMetrics test store</title>
+  <!-- SPMetrics loader snippet (same one a real store pastes) -->
+  <script>
+    !function(){window.sp=window.sp||function(){(sp.q=sp.q||[]).push(arguments)};
+    var s=document.createElement('script');s.async=1;s.src='/px.js';
+    document.head.appendChild(s);}();
+    sp('init','pk_dev_demo');
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; color: #0f172a; background: #f8fafc; }
+    header { background: #0f172a; color: #fff; padding: 14px 22px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 5; }
+    header b { font-size: 18px; }
+    header .tag { color: #94a3b8; font-size: 13px; }
+    #cartBtn { margin-left: auto; background: #22c55e; color: #052e16; border: none; padding: 9px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    main { max-width: 1000px; margin: 26px auto; padding: 0 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+    .thumb { font-size: 64px; text-align: center; padding: 28px 0; background: #f1f5f9; }
+    .card h3 { margin: 12px 14px 2px; font-size: 15px; }
+    .card .price { margin: 0 14px; color: #475569; }
+    .card button { margin: 12px 14px 14px; padding: 9px; border: 1px solid #0f172a; background: #0f172a; color: #fff; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .card button:hover { opacity: .9; }
+    /* drawer */
+    #overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; z-index: 10; }
+    #drawer { position: fixed; top: 0; right: 0; height: 100%; width: 360px; max-width: 90vw; background: #fff; box-shadow: -8px 0 24px rgba(0,0,0,.15); transform: translateX(100%); transition: transform .2s; z-index: 11; display: flex; flex-direction: column; }
+    #drawer.open { transform: none; }
+    #drawer header { background: #fff; color: #0f172a; border-bottom: 1px solid #e5e7eb; }
+    #items { flex: 1; overflow: auto; padding: 12px 18px; }
+    .li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    #foot { padding: 16px 18px; border-top: 1px solid #e5e7eb; }
+    #foot .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 700; }
+    #checkout { width: 100%; padding: 12px; background: #22c55e; color: #052e16; border: none; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 15px; }
+    #checkout:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 999px; opacity: 0; transition: opacity .2s; z-index: 20; font-size: 14px; }
+    .toast.show { opacity: 1; }
+    .done { text-align: center; padding: 40px 20px; }
+    .done .big { font-size: 56px; }
+    .note { color: #64748b; font-size: 13px; margin-top: 8px; }
+    input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; margin: 6px 0 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <b>🛍️ Dummy Shop</b>
+    <span class="tag">SPMetrics test store</span>
+    <button id="cartBtn" onclick="openCart()">Cart (<span id="count">0</span>)</button>
+  </header>
+
+  <main id="storefront">
+    <div class="grid" id="grid"></div>
+    <p class="note" id="attrNote"></p>
+  </main>
+
+  <div id="overlay" onclick="closeCart()"></div>
+  <aside id="drawer">
+    <header><b>Your cart</b> <button onclick="closeCart()" style="margin-left:auto;border:none;background:none;font-size:20px;cursor:pointer">×</button></header>
+    <div id="items"></div>
+    <div id="foot">
+      <div class="row"><span>Total</span><span id="total">$0.00</span></div>
+      <div id="checkoutForm" hidden>
+        <input id="email" type="email" placeholder="you@email.com (for identify)" />
+      </div>
+      <button id="checkout" onclick="checkout()" disabled>Checkout</button>
+    </div>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ── dummy catalog (prices in cents) ──────────────────────────
+    var PRODUCTS = [
+      { id: 'TEE-01',  title: 'Classic Tee',      emoji: '👕', price: 2900 },
+      { id: 'CAP-01',  title: 'Logo Cap',         emoji: '🧢', price: 1900 },
+      { id: 'SNK-01',  title: 'Runner Sneakers',  emoji: '👟', price: 8900 },
+      { id: 'SOK-01',  title: 'Cozy Socks',       emoji: '🧦', price: 1200 },
+      { id: 'BAG-01',  title: 'Daypack',          emoji: '🎒', price: 6500 },
+      { id: 'WCH-01',  title: 'Minimal Watch',    emoji: '⌚', price: 14900 }
+    ];
+    var cart = {}; // id -> qty
+    var fmt = function(c){ return '$' + (c/100).toFixed(2); };
+
+    function render() {
+      document.getElementById('grid').innerHTML = PRODUCTS.map(function(p){
+        return '<div class="card">'
+          + '<div class="thumb">' + p.emoji + '</div>'
+          + '<h3>' + p.title + '</h3>'
+          + '<p class="price">' + fmt(p.price) + '</p>'
+          + '<button onclick="view(\'' + p.id + '\')">View</button>'
+          + '</div>';
+      }).join('');
+      // show attribution the pixel captured
+      var lp = sessionStorage.getItem('sp_landing') || location.href;
+      document.getElementById('attrNote').textContent = 'Tip: open this page with ?utm_source=facebook&fbclid=123 (or gclid) to test attribution. Landing captured: ' + lp;
+    }
+
+    function view(id){
+      var p = byId(id);
+      sp('track','product_view',{ productId:p.id, title:p.title, price:p.price });
+      addToCart(id);
+    }
+    function addToCart(id){
+      var p = byId(id);
+      cart[id] = (cart[id]||0) + 1;
+      sp('track','add_to_cart',{ productId:p.id, title:p.title, price:p.price, qty:cart[id] });
+      updateCart();
+      toast(p.title + ' added to cart');
+    }
+    function updateCart(){
+      var n = Object.values(cart).reduce(function(a,b){return a+b;},0);
+      document.getElementById('count').textContent = n;
+      var items = Object.keys(cart).map(function(id){
+        var p = byId(id); return '<div class="li"><span>' + p.emoji + ' ' + p.title + ' × ' + cart[id] + '</span><span>' + fmt(p.price*cart[id]) + '</span></div>';
+      }).join('');
+      document.getElementById('items').innerHTML = items || '<p style="color:#94a3b8">Empty.</p>';
+      document.getElementById('total').textContent = fmt(total());
+      document.getElementById('checkout').disabled = n === 0;
+    }
+    function total(){ return Object.keys(cart).reduce(function(s,id){ return s + byId(id).price*cart[id]; }, 0); }
+    function byId(id){ return PRODUCTS.filter(function(p){return p.id===id;})[0]; }
+
+    var checkoutStarted = false;
+    function openCart(){
+      document.getElementById('drawer').classList.add('open');
+      document.getElementById('overlay').style.display = 'block';
+      document.getElementById('checkoutForm').hidden = false;
+      if (!checkoutStarted && total() > 0){ sp('track','checkout_started',{ value: total() }); checkoutStarted = true; }
+    }
+    function closeCart(){
+      document.getElementById('drawer').classList.remove('open');
+      document.getElementById('overlay').style.display = 'none';
+    }
+
+    function checkout(){
+      var email = document.getElementById('email').value.trim();
+      if (email) sp('identify', { email: email });
+      var orderId = 'W-' + Date.now();
+      var lineItems = Object.keys(cart).map(function(id){ var p=byId(id); return { productId:p.id, title:p.title, quantity:cart[id], price:p.price }; });
+      sp('track','purchase', {
+        _id: orderId,
+        order: { externalOrderId: orderId, orderNumber: orderId, totalAmount: total(), currency: 'USD', lineItems: lineItems }
+      });
+      var amt = total();
+      cart = {}; updateCart(); closeCart();
+      document.getElementById('storefront').innerHTML =
+        '<div class="done"><div class="big">✅</div><h2>Order confirmed</h2>'
+        + '<p>Order <b>' + orderId + '</b> · ' + fmt(amt) + '</p>'
+        + '<p class="note">A <code>purchase</code> event was sent to SPMetrics. Check your dashboard.</p>'
+        + '<p><a href="/shop.html">← Back to shop</a> · <a href="/dashboard">Open dashboard →</a></p></div>';
+    }
+
+    var toastTimer;
+    function toast(msg){
+      var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+      clearTimeout(toastTimer); toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+    }
+
+    render(); updateCart();
+  </script>
+</body>
+</html>
