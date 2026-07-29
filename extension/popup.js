@@ -8,17 +8,17 @@ function esc(s) { return String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ 
 
 // Pretty labels + icons per event type (mirrors how TW labels "Page Load").
 const META = {
-  page_view:        { label: "Page Load",        emoji: "👁️" },
-  product_view:     { label: "Product View",     emoji: "🔍" },
-  collection_view:  { label: "Collection View",  emoji: "📚" },
-  search:           { label: "Search",           emoji: "🔎" },
-  add_to_cart:      { label: "Add to Cart",      emoji: "🛒" },
-  remove_from_cart: { label: "Remove from Cart", emoji: "➖" },
-  checkout_started: { label: "Checkout Started", emoji: "🧾" },
-  checkout_step:    { label: "Checkout Step",    emoji: "🧾" },
-  purchase:         { label: "Purchase",         emoji: "💰" },
-  identify:         { label: "Identify",         emoji: "👤" },
-  custom:           { label: "Custom",           emoji: "⚡" },
+  page_view:        { label: "Page Load" },
+  product_view:     { label: "Product View" },
+  collection_view:  { label: "Collection View" },
+  search:           { label: "Search" },
+  add_to_cart:      { label: "Add to Cart" },
+  remove_from_cart: { label: "Remove from Cart" },
+  checkout_started: { label: "Checkout Started" },
+  checkout_step:    { label: "Checkout Step" },
+  purchase:         { label: "Purchase" },
+  identify:         { label: "Identify" },
+  custom:           { label: "Custom" },
 };
 
 // Validate an event's shape → the green/amber/red status like TW's "Valid".
@@ -61,7 +61,7 @@ function renderPixel(st) {
   const d = (st && st.detect) || {};
   const token = tokenOf(st);
   el("pixelStatus").innerHTML =
-    `<span class="pill ${on ? "ok" : "no"}">${on ? "✓ Pixel detected" : "○ No SPMetrics pixel"}</span>` +
+    `<span class="pill ${on ? "ok" : "no"}">${on ? "Pixel detected" : "No SPMetrics pixel"}</span>` +
     (on
       ? `<dl>
           <dt>Pixel id</dt><dd>${esc(token || "—")}</dd>
@@ -86,7 +86,11 @@ function renderDiag(st) {
     ["Events sending", collects.length > 0],
   ];
   el("diag").innerHTML = checks
-    .map(([label, ok]) => `<li><span>${ok ? "✅" : "❌"}</span><span>${esc(label)}</span></li>`)
+    .map(
+      ([label, ok]) =>
+        `<li><span style="font-weight:700;color:${ok ? "#16a34a" : "#dc2626"}">${ok ? "PASS" : "FAIL"}</span>` +
+        `<span>${esc(label)}</span></li>`,
+    )
     .join("");
 }
 
@@ -111,7 +115,7 @@ function renderEvents(st) {
     .slice(-60)
     .reverse()
     .map(({ e, batch, key }) => {
-      const m = META[e.type] || { label: e.name || e.type, emoji: "⚡" };
+      const m = META[e.type] || { label: e.name || e.type };
       const label = e.type === "custom" && e.name ? e.name : m.label;
       const v = validate(e);
       const time = hhmm(e.ts || batch.t);
@@ -136,10 +140,10 @@ function renderEvents(st) {
       return (
         `<details class="ev" data-key="${esc(key)}"${isOpen ? " open" : ""}>` +
         `<summary>` +
-        `<span class="emoji">${m.emoji}</span>` +
+        `<span class="dot ${v.s}"></span>` +
         `<span class="nm">${esc(label)}</span>` +
-        `<span class="st ${v.s}">${v.s === "valid" ? "✓" : v.s === "warn" ? "⚠" : "✕"} ${esc(v.t)}</span>` +
-        `<span class="time">🕐 ${esc(time)}</span>` +
+        `<span class="st ${v.s}">${esc(v.t)}</span>` +
+        `<span class="time">${esc(time)}</span>` +
         `</summary>` +
         `<div class="params"><h4>Received Parameters</h4><dl>` +
         params.map(([k, val]) => `<dt>${esc(k)}</dt><dd>${esc(val)}</dd>`).join("") +

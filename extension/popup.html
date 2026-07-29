@@ -26,7 +26,8 @@
     .ev { border:1px solid var(--line); border-radius:10px; margin-bottom:8px; overflow:hidden; }
     .ev summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:10px; padding:11px 12px; }
     .ev summary::-webkit-details-marker { display:none; }
-    .ev .emoji { font-size:16px; }
+    .ev .dot { width:9px; height:9px; border-radius:50%; flex:none; }
+    .ev .dot.valid { background:#16a34a; } .ev .dot.warn { background:#d97706; } .ev .dot.invalid { background:#dc2626; }
     .ev .nm { font-weight:600; flex:1; }
     .ev .st { font-size:11px; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
     .st.valid { color:#16a34a; } .st.warn { color:#d97706; } .st.invalid { color:#dc2626; }
