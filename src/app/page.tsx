@@ -18,11 +18,12 @@ const box: React.CSSProperties = {
   background: "var(--surface-2)",
   border: "1px solid var(--border)",
   padding: 16,
-  borderRadius: 10,
+  borderRadius: 8,
   overflowX: "auto",
-  fontSize: 12.5,
+  fontSize: 13,
   lineHeight: 1.6,
   fontFamily: "var(--font-mono)",
+  color: "var(--ink-2)",
 };
 
 export default function Home() {
@@ -35,17 +36,17 @@ export default function Home() {
         <Link href="/dashboard" className="seg"><span className="active">Dashboard</span></Link>
       </header>
 
-      <main className="container" style={{ maxWidth: 760 }}>
-        <div style={{ margin: "12px 0 28px" }}>
-          <span className="pill"><ShieldCheck size={13} weight="bold" /> First-party pixel</span>
-          <h1 style={{ fontSize: 32, letterSpacing: "-0.03em", margin: "16px 0 8px" }}>
+      <main className="container" style={{ maxWidth: 800 }}>
+        <div style={{ margin: "24px 0 40px" }}>
+          <span className="pill"><ShieldCheck size={14} weight="bold" /> First-party pixel</span>
+          <h1 style={{ fontSize: 48, letterSpacing: "-0.03em", margin: "20px 0 12px", fontWeight: 700, lineHeight: 1.2 }}>
             Know which ad actually made the sale.
           </h1>
-          <p className="muted" style={{ fontSize: 15, maxWidth: 560 }}>
+          <p className="muted" style={{ fontSize: 16, maxWidth: 600, lineHeight: 1.7, margin: "16px 0 0" }}>
             A first-party analytics &amp; attribution pixel that survives ITP and ad-blockers, stitches every click to
             its order, and joins your ad spend for true ROAS.
           </p>
-          <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
             <Link href="/dashboard" className="btn btn-primary">
               Open dashboard <ArrowRight size={16} weight="bold" />
             </Link>

@@ -47,20 +47,20 @@ export default function RevenueChart({ points }: { points: Point[] }) {
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: 220, display: "block" }}>
         <defs>
           <linearGradient id="revfill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
         {/* recessive gridlines */}
         {[0.25, 0.5, 0.75].map((g) => (
-          <line key={g} x1={padX} x2={W - padX} y1={padTop + g * (H - padTop - padBottom)} y2={padTop + g * (H - padTop - padBottom)} stroke="var(--grid)" strokeWidth="1" />
+          <line key={g} x1={padX} x2={W - padX} y1={padTop + g * (H - padTop - padBottom)} y2={padTop + g * (H - padTop - padBottom)} stroke="var(--grid)" strokeWidth="0.8" opacity="0.6" />
         ))}
         <path d={area} fill="url(#revfill)" />
-        <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+        <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
         {hiPt && (
           <>
-            <line x1={x(hi!)} x2={x(hi!)} y1={padTop} y2={H - padBottom} stroke="var(--border-strong)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-            <circle cx={x(hi!)} cy={y(hiPt.revenue)} r="4" fill="var(--accent)" stroke="var(--surface)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+            <line x1={x(hi!)} x2={x(hi!)} y1={padTop} y2={H - padBottom} stroke="var(--border)" strokeWidth="1.2" vectorEffect="non-scaling-stroke" opacity="0.8" />
+            <circle cx={x(hi!)} cy={y(hiPt.revenue)} r="4.5" fill="var(--accent)" stroke="var(--surface)" strokeWidth="2.5" vectorEffect="non-scaling-stroke" />
           </>
         )}
       </svg>

@@ -99,8 +99,8 @@ export default async function Dashboard({
   return (
     <Shell sites={sites} siteId={siteId} days={days}>
       <div className="topbar">
-        <h1 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.02em", margin: 0 }}>Overview</h1>
-        <span className="muted" style={{ fontSize: 13 }}>{site.name}</span>
+        <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", margin: 0 }}>Overview</h1>
+        <span className="muted" style={{ fontSize: 14, fontWeight: 500 }}>{site.name}</span>
         <span className="spacer" />
         <span className="seg">
           {RANGES.map((d) => (
