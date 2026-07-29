@@ -11,15 +11,15 @@ export async function getAttributionBySource(siteId: string, days: number = 30) 
     .select({
       source: orders.attributedSource,
       channel: orders.attributedChannel,
-      revenue: sql<number>`COALESCE(SUM(CAST(${orders.totalAmount} AS INTEGER)), 0)`,
-      orders: sql<number>`COUNT(*)`,
+      revenue: sql<number>`COALESCE(SUM(CAST(${orders.totalAmount} AS BIGINT)), 0)`.as("revenue"),
+      orders: sql<number>`COUNT(*)`.as("orders"),
     })
     .from(orders)
     .where(
       sql`${orders.siteId} = ${siteId} AND ${orders.placedAt} >= ${cutoff}`
     )
     .groupBy(orders.attributedSource, orders.attributedChannel)
-    .orderBy(sql`revenue DESC`);
+    .orderBy(sql`COALESCE(SUM(CAST(${orders.totalAmount} AS BIGINT)), 0) DESC`);
 
   return result;
 }
@@ -31,10 +31,10 @@ export async function getAttributionTimeseries(siteId: string, days: number = 30
 
   const result = await db
     .select({
-      day: sql<string>`CAST(${orders.placedAt} AS DATE)`,
+      day: sql<string>`CAST(${orders.placedAt} AS DATE)`.as("day"),
       source: orders.attributedSource,
-      revenue: sql<number>`COALESCE(SUM(CAST(${orders.totalAmount} AS INTEGER)), 0)`,
-      orders: sql<number>`COUNT(*)`,
+      revenue: sql<number>`COALESCE(SUM(CAST(${orders.totalAmount} AS BIGINT)), 0)`.as("revenue"),
+      orders: sql<number>`COUNT(*)`.as("orders"),
     })
     .from(orders)
     .where(
