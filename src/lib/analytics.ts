@@ -117,6 +117,62 @@ export async function getRecentOrders(siteId: string, limit = 15): Promise<Recen
   }));
 }
 
+export type RoasRow = {
+  channel: string;
+  spend: number; // minor units
+  revenue: number; // minor units
+  orders: number;
+  roas: number | null; // revenue / spend
+};
+
+function sinceStr(days: number): string {
+  return since(days).toISOString().slice(0, 10);
+}
+
+// Total ad spend across all providers/channels in the range.
+export async function getSpendTotal(siteId: string, days: number): Promise<number> {
+  const db = await getDb();
+  const [row] = await db
+    .select({ spend: sql<number>`coalesce(sum(${schema.adSpend.spend}), 0)` })
+    .from(schema.adSpend)
+    .where(and(eq(schema.adSpend.siteId, siteId), gte(schema.adSpend.day, sinceStr(days))));
+  return Number(row?.spend ?? 0);
+}
+
+// Join spend (by channel) to attributed revenue (by channel) → ROAS per channel.
+export async function getRoasByChannel(siteId: string, days: number): Promise<RoasRow[]> {
+  const db = await getDb();
+
+  const spendRows = await db
+    .select({
+      channel: schema.adSpend.channel,
+      spend: sql<number>`coalesce(sum(${schema.adSpend.spend}), 0)`,
+    })
+    .from(schema.adSpend)
+    .where(and(eq(schema.adSpend.siteId, siteId), gte(schema.adSpend.day, sinceStr(days))))
+    .groupBy(schema.adSpend.channel);
+
+  const revenue = await getRevenueByChannel(siteId, days);
+
+  // Merge both sides on channel; a channel can have spend, revenue, or both.
+  const map = new Map<string, RoasRow>();
+  for (const r of revenue) {
+    map.set(r.channel, { channel: r.channel, spend: 0, revenue: r.revenue, orders: r.orders, roas: null });
+  }
+  for (const s of spendRows) {
+    const spend = Number(s.spend);
+    const existing = map.get(s.channel) ?? { channel: s.channel, spend: 0, revenue: 0, orders: 0, roas: null };
+    existing.spend = spend;
+    map.set(s.channel, existing);
+  }
+  const rows = [...map.values()].map((r) => ({
+    ...r,
+    roas: r.spend > 0 ? r.revenue / r.spend : null,
+  }));
+  // Paid channels (with spend) first, then by revenue.
+  return rows.sort((a, b) => b.spend - a.spend || b.revenue - a.revenue);
+}
+
 export async function listSites() {
   const db = await getDb();
   return db.query.sites.findMany({ columns: { id: true, name: true, domain: true } });

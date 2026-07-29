@@ -12,6 +12,8 @@
     "icons:build": "node scripts/make-icons.mjs",
     "db:migrate": "tsx src/db/migrate.ts",
     "site:create": "tsx src/db/create-site.ts",
+    "spend:add": "tsx src/db/spend-add.ts",
+    "spend:meta": "tsx src/db/spend-meta.ts",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
     "seed": "tsx src/db/seed.ts",

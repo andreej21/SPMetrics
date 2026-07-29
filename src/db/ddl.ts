@@ -124,4 +124,22 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS orders_site_external_idx ON orders (site_id, external_order_id);
 CREATE INDEX IF NOT EXISTS orders_site_placed_idx ON orders (site_id, placed_at);
+
+CREATE TABLE IF NOT EXISTS ad_spend (
+  id text PRIMARY KEY,
+  site_id text NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
+  provider text NOT NULL,
+  channel text NOT NULL,
+  source text,
+  day date NOT NULL,
+  campaign text NOT NULL DEFAULT '',
+  campaign_id text NOT NULL DEFAULT '',
+  spend bigint NOT NULL DEFAULT 0,
+  impressions bigint NOT NULL DEFAULT 0,
+  clicks bigint NOT NULL DEFAULT 0,
+  currency text NOT NULL DEFAULT 'USD',
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ad_spend_uniq_idx ON ad_spend (site_id, provider, day, campaign_id);
+CREATE INDEX IF NOT EXISTS ad_spend_site_day_idx ON ad_spend (site_id, day);
 `;

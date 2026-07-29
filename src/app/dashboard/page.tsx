@@ -4,6 +4,8 @@ import {
   getRevenueByChannel,
   getTopCampaigns,
   getRecentOrders,
+  getRoasByChannel,
+  getSpendTotal,
   listSites,
 } from "@/lib/analytics";
 
@@ -51,14 +53,18 @@ export default async function Dashboard({
   const days = RANGES.includes(Number(sp.days)) ? Number(sp.days) : 30;
   const site = sites.find((s) => s.id === siteId)!;
 
-  const [summary, channels, campaigns, orders] = await Promise.all([
+  const [summary, channels, campaigns, orders, roas, spendTotal] = await Promise.all([
     getSummary(siteId, days),
     getRevenueByChannel(siteId, days),
     getTopCampaigns(siteId, days),
     getRecentOrders(siteId),
+    getRoasByChannel(siteId, days),
+    getSpendTotal(siteId, days),
   ]);
 
   const maxChannelRev = Math.max(1, ...channels.map((c) => c.revenue));
+  const blendedRoas = spendTotal > 0 ? summary.revenue / spendTotal : null;
+  const fmtRoas = (r: number | null) => (r == null ? "—" : r.toFixed(2) + "×");
 
   return (
     <Shell>
@@ -93,10 +99,46 @@ export default async function Dashboard({
       {/* KPI row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 20 }}>
         <Kpi label="Revenue" value={money(summary.revenue)} />
+        <Kpi label="Ad spend" value={money(spendTotal)} />
+        <Kpi label="Blended ROAS" value={fmtRoas(blendedRoas)} accent />
         <Kpi label="Orders" value={String(summary.orders)} />
-        <Kpi label="Sessions" value={summary.sessions.toLocaleString()} />
         <Kpi label="Conversion rate" value={`${(summary.conversionRate * 100).toFixed(2)}%`} />
         <Kpi label="Avg order value" value={money(summary.aov)} />
+      </div>
+
+      {/* Ad spend & ROAS */}
+      <div style={card}>
+        <h3 style={h3}>Ad spend &amp; ROAS by channel</h3>
+        {roas.every((r) => r.spend === 0) ? (
+          <p style={{ color: muted }}>
+            No ad spend loaded yet. Add some with{" "}
+            <code>npm run spend:add -- --token pk_... --channel &quot;facebook / paid&quot; --day {sinceStrToday()} --spend 50</code>{" "}
+            or connect Meta with <code>npm run spend:meta</code>.
+          </p>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr>
+                {["Channel", "Spend", "Revenue", "ROAS", "Orders"].map((h, i) => (
+                  <th key={h} style={{ textAlign: i === 0 ? "left" : "right", color: muted, fontWeight: 500, padding: "6px 0" }}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {roas.map((r) => (
+                <tr key={r.channel} style={{ borderTop: "1px solid #f1f5f9" }}>
+                  <td style={{ padding: "7px 0" }}>{r.channel}</td>
+                  <td style={cellNum}>{r.spend > 0 ? money(r.spend) : "—"}</td>
+                  <td style={cellNum}>{money(r.revenue)}</td>
+                  <td style={{ ...cellNum, fontWeight: 700, color: roasColor(r.roas) }}>{fmtRoas(r.roas)}</td>
+                  <td style={cellNum}>{r.orders}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Revenue by channel */}
@@ -165,6 +207,18 @@ const card: React.CSSProperties = { background: "#fff", border: "1px solid #e5e7
 const h3: React.CSSProperties = { margin: "0 0 12px", fontSize: 13, textTransform: "uppercase", letterSpacing: ".04em", color: muted };
 const chip: React.CSSProperties = { display: "inline-block", padding: "5px 12px", marginRight: 6, borderRadius: 999, border: "1px solid #e5e7eb", color: "#0f172a", textDecoration: "none", fontSize: 13 };
 const chipActive: React.CSSProperties = { background: "#0f172a", color: "#fff", borderColor: "#0f172a" };
+const cellNum: React.CSSProperties = { textAlign: "right", padding: "7px 0", fontFamily: "ui-monospace, monospace" };
+
+function roasColor(r: number | null): string {
+  if (r == null) return muted;
+  if (r >= 3) return "#16a34a"; // strong
+  if (r >= 1) return "#0f172a"; // profitable-ish
+  return "#dc2626"; // losing money
+}
+
+function sinceStrToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -178,11 +232,11 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
-    <div style={card}>
+    <div style={{ ...card, ...(accent ? { borderColor: "#16a34a", borderWidth: 2 } : {}) }}>
       <div style={{ color: muted, fontSize: 12, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700 }}>{value}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: accent ? "#16a34a" : undefined }}>{value}</div>
     </div>
   );
 }

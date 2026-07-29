@@ -20,10 +20,11 @@ Legend:  ✅ done · 🔨 building now · ⬜ to do · 👤 = only you can do it
 5. ⬜ 🤖 **Auth + multi-tenant** — login, each customer sees only their sites
 
 ## Phase 3 — The competitive moat
-6. ⬜ 🤖 **Ad-spend integration (Meta first)** — pull spend, join to attributed revenue = true ROAS
-   - ⬜ 👤 sub-step: create a Meta developer app + approve API access (only you can)
+6. ✅ 🤖 **Ad-spend integration + ROAS** — spend model, Meta connector, manual/API import,
+   dashboard shows spend + blended & per-channel ROAS
+   - ⬜ 👤 sub-step: create a Meta app + token to pull *live* Meta spend (manual import works now)
 7. ⬜ 🤖 **Attribution models** — first/last click, linear, time-decay
-8. ⬜ 🤖 **Google + TikTok spend** — same pattern as Meta
+8. ⬜ 🤖 **Google + TikTok spend** — same pattern as Meta (connectors)
 
 ## Phase 4 — Scale & harden (when you have real traffic)
 9. ⬜ 🤖 Rate limiting + bot filtering on the collector

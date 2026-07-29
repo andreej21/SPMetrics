@@ -2,6 +2,7 @@ import {
   pgTable,
   text,
   timestamp,
+  date,
   jsonb,
   integer,
   bigint,
@@ -246,6 +247,39 @@ export const orders = pgTable(
   }),
 );
 
+// Daily ad spend pulled from ad platforms (or entered manually), so we can join
+// spend to attributed revenue and compute ROAS. One row per site/provider/day/campaign.
+export const adSpend = pgTable(
+  "ad_spend",
+  {
+    id: text("id").primaryKey(), // spd_...
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+
+    provider: text("provider").notNull(), // meta | google | tiktok | manual
+    // Normalized channel string that MATCHES how attribution labels sessions/orders,
+    // e.g. "facebook / paid" — this is the join key for channel-level ROAS.
+    channel: text("channel").notNull(),
+    source: text("source"), // facebook | google | tiktok
+
+    day: date("day").notNull(), // the spend date (YYYY-MM-DD)
+    campaign: text("campaign").notNull().default(""), // campaign name ('' = channel-level)
+    campaignId: text("campaign_id").notNull().default(""),
+
+    spend: bigint("spend", { mode: "number" }).notNull().default(0), // minor units
+    impressions: bigint("impressions", { mode: "number" }).notNull().default(0),
+    clicks: bigint("clicks", { mode: "number" }).notNull().default(0),
+    currency: text("currency").notNull().default("USD"),
+
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uniq: uniqueIndex("ad_spend_uniq_idx").on(t.siteId, t.provider, t.day, t.campaignId),
+    siteDayIdx: index("ad_spend_site_day_idx").on(t.siteId, t.day),
+  }),
+);
+
 export type OrderLineItem = {
   productId?: string;
   variantId?: string;
@@ -261,3 +295,4 @@ export type Session = typeof sessions.$inferSelect;
 export type Identity = typeof identities.$inferSelect;
 export type EventRow = typeof events.$inferSelect;
 export type Order = typeof orders.$inferSelect;
+export type AdSpend = typeof adSpend.$inferSelect;
