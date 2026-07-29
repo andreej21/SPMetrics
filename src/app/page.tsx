@@ -36,22 +36,22 @@ export default function Home() {
         <Link href="/dashboard" className="seg"><span className="active">Dashboard</span></Link>
       </header>
 
-      <main className="container" style={{ maxWidth: 800 }}>
-        <div style={{ margin: "24px 0 40px" }}>
-          <span className="pill"><ShieldCheck size={14} weight="bold" /> First-party pixel</span>
-          <h1 style={{ fontSize: 48, letterSpacing: "-0.03em", margin: "20px 0 12px", fontWeight: 700, lineHeight: 1.2 }}>
+      <main className="container" style={{ maxWidth: 700 }}>
+        <div style={{ margin: "32px 0 36px" }}>
+          <span className="pill"><ShieldCheck size={13} weight="bold" /> First-party pixel</span>
+          <h1 style={{ fontSize: 40, letterSpacing: "-0.02em", margin: "18px 0 10px", fontWeight: 600, lineHeight: 1.3 }}>
             Know which ad actually made the sale.
           </h1>
-          <p className="muted" style={{ fontSize: 16, maxWidth: 600, lineHeight: 1.7, margin: "16px 0 0" }}>
+          <p className="muted" style={{ fontSize: 14, maxWidth: 550, lineHeight: 1.6, margin: "14px 0 0" }}>
             A first-party analytics &amp; attribution pixel that survives ITP and ad-blockers, stitches every click to
             its order, and joins your ad spend for true ROAS.
           </p>
-          <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ marginTop: 24, display: "flex", gap: 10, flexWrap: "wrap" }}>
             <Link href="/dashboard" className="btn btn-primary">
-              Open dashboard <ArrowRight size={16} weight="bold" />
+              Open dashboard <ArrowRight size={14} weight="bold" />
             </Link>
             <Link href="/shop.html" className="btn btn-secondary">
-              <Storefront size={16} /> Try the test store
+              <Storefront size={14} /> Try the test store
             </Link>
           </div>
         </div>
