@@ -142,3 +142,112 @@ export class ConversionsClient {
     });
   }
 }
+
+/**
+ * Separate client for recording ad impressions (view-through attribution).
+ * Send impression events when a user sees an ad, then SPMetrics will attribute
+ * later conversions (even without a click) to that impression.
+ */
+export interface ImpressionPayload {
+  anonId?: string;
+  provider: string; // "meta" | "google" | "tiktok" | "custom"
+  channel?: string; // "facebook / paid", "google / paid", etc
+  source?: string; // facebook | google | tiktok
+  campaign?: string;
+  adId?: string;
+  adTitle?: string;
+  viewThroughWindow?: number; // default 30 days, how long impression counts for attribution
+}
+
+export class ImpressionsClient {
+  private baseUrl: string;
+  private s2sKey: string;
+
+  constructor(config: ConversionsAPIConfig) {
+    this.baseUrl = config.baseUrl.replace(/\/$/, "");
+    this.s2sKey = config.s2sKey;
+  }
+
+  async recordImpression(impression: ImpressionPayload): Promise<{ ok: boolean; visitorId: string }> {
+    const res = await fetch(`${this.baseUrl}/api/impressions`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${this.s2sKey}`,
+      },
+      body: JSON.stringify(impression),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(`Impressions API error: ${err.error}`);
+    }
+
+    return res.json();
+  }
+
+  /**
+   * Record a Meta/Facebook ad impression.
+   * Call this when a user sees your ad (ideally server-side from Meta's webhook).
+   */
+  async recordMetaImpression(
+    anonId: string,
+    options: {
+      campaign?: string;
+      adId?: string;
+      adTitle?: string;
+      viewThroughWindow?: number;
+    } = {},
+  ): Promise<{ ok: boolean; visitorId: string }> {
+    return this.recordImpression({
+      anonId,
+      provider: "meta",
+      source: "facebook",
+      channel: "facebook / paid",
+      ...options,
+    });
+  }
+
+  /**
+   * Record a Google Ads impression.
+   */
+  async recordGoogleImpression(
+    anonId: string,
+    options: {
+      campaign?: string;
+      adId?: string;
+      adTitle?: string;
+      viewThroughWindow?: number;
+    } = {},
+  ): Promise<{ ok: boolean; visitorId: string }> {
+    return this.recordImpression({
+      anonId,
+      provider: "google",
+      source: "google",
+      channel: "google / paid",
+      ...options,
+    });
+  }
+
+  /**
+   * Record a custom impression (any ad source).
+   */
+  async recordCustomImpression(
+    anonId: string,
+    provider: string,
+    options: {
+      channel?: string;
+      source?: string;
+      campaign?: string;
+      adId?: string;
+      adTitle?: string;
+      viewThroughWindow?: number;
+    } = {},
+  ): Promise<{ ok: boolean; visitorId: string }> {
+    return this.recordImpression({
+      anonId,
+      provider,
+      ...options,
+    });
+  }
+}

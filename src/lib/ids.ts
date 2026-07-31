@@ -11,6 +11,7 @@ export const newSessionId = () => rid("ses");
 export const newIdentityId = () => rid("idn");
 export const newEventId = () => rid("evt");
 export const newOrderId = () => rid("ord");
+export const newImpressionId = () => rid("imp");
 export const newSpendId = () => rid("spd");
 
 // Public token embedded in the browser (safe to expose).

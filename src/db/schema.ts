@@ -44,6 +44,7 @@ export const eventTypeEnum = pgEnum("event_type", [
   "checkout_step",
   "purchase",
   "identify",
+  "impression",
   "custom",
 ]);
 
@@ -270,6 +271,38 @@ export const orders = pgTable(
   }),
 );
 
+// Ad impressions (for view-through attribution). Track when a user sees an ad,
+// so we can attribute later conversions that happen without a click.
+export const impressions = pgTable(
+  "impressions",
+  {
+    id: text("id").primaryKey(), // imp_...
+    siteId: text("site_id")
+      .notNull()
+      .references(() => sites.id, { onDelete: "cascade" }),
+    visitorId: text("visitor_id").references(() => visitors.id, { onDelete: "set null" }),
+    sessionId: text("session_id").references(() => sessions.id, { onDelete: "set null" }),
+
+    // Ad source info
+    provider: text("provider").notNull(), // "meta" | "google" | "tiktok" | "custom"
+    channel: text("channel"), // "facebook / paid" | "google / paid" etc, matches session.channel
+    source: text("source"), // facebook | google | tiktok
+    campaign: text("campaign"),
+    adId: text("ad_id"), // the specific ad/creative id
+    adTitle: text("ad_title"),
+
+    // Impression window for view-through lookback (default 7/30 days)
+    viewThroughWindow: integer("view_through_window").notNull().default(30), // days
+
+    impressedAt: timestamp("impressed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    siteVisitorIdx: index("impressions_site_visitor_idx").on(t.siteId, t.visitorId),
+    siteChannelIdx: index("impressions_site_channel_idx").on(t.siteId, t.channel),
+    siteImpressionIdx: index("impressions_site_impressed_idx").on(t.siteId, t.impressedAt),
+  }),
+);
+
 // Daily ad spend pulled from ad platforms (or entered manually), so we can join
 // spend to attributed revenue and compute ROAS. One row per site/provider/day/campaign.
 export const adSpend = pgTable(
@@ -318,4 +351,5 @@ export type Session = typeof sessions.$inferSelect;
 export type Identity = typeof identities.$inferSelect;
 export type EventRow = typeof events.$inferSelect;
 export type Order = typeof orders.$inferSelect;
+export type Impression = typeof impressions.$inferSelect;
 export type AdSpend = typeof adSpend.$inferSelect;

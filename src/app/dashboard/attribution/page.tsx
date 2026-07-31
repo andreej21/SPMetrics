@@ -4,6 +4,7 @@ import { getAttributionBySource, getAttributionTimeseries } from "@/lib/attribut
 import { getSummary, listSites, getPrevPeriod } from "@/lib/analytics";
 import { Shell } from "@/components/dashboard/Shell";
 import { getAssistedConversions, getTouchpoints, attributeOrder } from "@/lib/multitouch-attribution";
+import { getViewThroughAttribution } from "@/lib/viewthrough-attribution";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +39,11 @@ export default async function AttributionDashboard({
   const days = RANGES.includes(Number(sp.days)) ? Number(sp.days) : 30;
   const site = sites.find((s) => s.id === siteId)!;
 
-  const [attribution, summary, assisted] = await Promise.all([
+  const [attribution, summary, assisted, viewThrough] = await Promise.all([
     getAttributionBySource(siteId, days),
     getSummary(siteId, days),
     getAssistedConversions(siteId, days),
+    getViewThroughAttribution(siteId, days),
   ]);
 
   const totalRevenue = attribution.reduce((sum: number, row) => sum + row.revenue, 0);
@@ -165,6 +167,43 @@ export default async function AttributionDashboard({
                       </tr>
                     );
                   })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* View-through attribution */}
+        <div className="card">
+          <h3 className="sec-title"><ChartBar size={14} weight="bold" /> View-through vs click-through</h3>
+          {viewThrough.length === 0 ? (
+            <p className="muted">No impression data yet. Send impressions via /api/impressions to enable view-through tracking.</p>
+          ) : (
+            <div className="tbl-wrap">
+              <table className="tbl" style={{ fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Provider</th>
+                    <th>View-through Revenue</th>
+                    <th>Click-through Revenue</th>
+                    <th>Total Revenue</th>
+                    <th>VT %</th>
+                    <th>Total Orders</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {viewThrough.map((row) => (
+                    <tr key={`${row.source}-${row.provider}`}>
+                      <td style={{ fontWeight: 500 }}>{row.source || "Direct"}</td>
+                      <td style={{ fontSize: 12, color: "var(--muted)" }}>{row.provider}</td>
+                      <td style={{ color: "var(--accent)" }}>{money(row.viewThroughRevenue)}</td>
+                      <td>{money(row.clickThroughRevenue)}</td>
+                      <td style={{ fontWeight: 600 }}>{money(row.totalRevenue)}</td>
+                      <td style={{ fontWeight: 600 }}>{row.vt_pct}%</td>
+                      <td style={{ fontSize: 12, color: "var(--muted)" }}>{row.totalOrders}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
