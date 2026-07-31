@@ -15,6 +15,10 @@ export type Attribution = {
   fbclid?: string;
   gclid?: string;
   ttclid?: string;
+  spmSource?: string;
+  spmVersion?: string;
+  spmExperiment?: string;
+  spmChannel?: string;
   referrer?: string;
   landingPage?: string;
   channel: string; // e.g. "facebook / paid", "google / organic", "direct", "referral"
@@ -70,6 +74,10 @@ export function classify(landingPage?: string | null, referrer?: string | null, 
     fbclid: get("fbclid"),
     gclid: get("gclid"),
     ttclid: get("ttclid"),
+    spmSource: get("spm_source"),
+    spmVersion: get("spm_version"),
+    spmExperiment: get("spm_experiment"),
+    spmChannel: get("spm_channel"),
     referrer: referrer || undefined,
     landingPage: landingPage || undefined,
     channel: "direct",

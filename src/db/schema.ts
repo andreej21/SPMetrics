@@ -71,6 +71,9 @@ export const sites = pgTable(
   }),
 );
 
+// SPMetrics custom parameters — flexible tracking beyond standard UTMs.
+export const spmParamsEnum = pgEnum("spm_param_source", ["url", "server", "sdk"]);
+
 // Known person. A visitor is linked to an identity once we learn who they are.
 export const identities = pgTable(
   "identities",
@@ -110,6 +113,12 @@ export const visitors = pgTable(
     firstReferrer: text("first_referrer"),
     firstLandingPage: text("first_landing_page"),
 
+    // SPMetrics custom parameters (spm_*).
+    firstSpmSource: text("first_spm_source"),
+    firstSpmVersion: text("first_spm_version"),
+    firstSpmExperiment: text("first_spm_experiment"),
+    firstSpmChannel: text("first_spm_channel"),
+
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -137,6 +146,12 @@ export const sessions = pgTable(
     utmCampaign: text("utm_campaign"),
     utmContent: text("utm_content"),
     utmTerm: text("utm_term"),
+
+    // SPMetrics custom parameters (spm_*).
+    spmSource: text("spm_source"),
+    spmVersion: text("spm_version"),
+    spmExperiment: text("spm_experiment"),
+    spmChannel: text("spm_channel"),
 
     // Ad-platform click ids — the strongest attribution signal.
     fbclid: text("fbclid"),
@@ -192,6 +207,11 @@ export const events = pgTable(
     utmSource: text("utm_source"),
     utmMedium: text("utm_medium"),
     utmCampaign: text("utm_campaign"),
+
+    // SPMetrics custom parameters.
+    spmSource: text("spm_source"),
+    spmVersion: text("spm_version"),
+    spmExperiment: text("spm_experiment"),
 
     // "client" (browser pixel) vs "server" (s2s / webhook) — s2s is the source of truth for money.
     source: text("source").notNull().default("client"),
