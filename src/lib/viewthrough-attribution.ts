@@ -26,42 +26,45 @@ export async function getViewThroughAttribution(
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
   // Get all impressions in the window
-  const impressions = await db.query.impressions.findMany({
-    where: and(
+  const impressions = await db
+    .select({
+      visitorId: schema.impressions.visitorId,
+      channel: schema.impressions.channel,
+      source: schema.impressions.source,
+      provider: schema.impressions.provider,
+      viewThroughWindow: schema.impressions.viewThroughWindow,
+      impressedAt: schema.impressions.impressedAt,
+    })
+    .from(schema.impressions)
+    .where(and(
       eq(schema.impressions.siteId, siteId),
       gte(schema.impressions.impressedAt, cutoff),
-    ),
-    columns: {
-      visitorId: true,
-      channel: true,
-      source: true,
-      provider: true,
-      viewThroughWindow: true,
-      impressedAt: true,
-    },
-  });
+    ));
 
   if (impressions.length === 0) {
     return [];
   }
 
   const visitorIds = [...new Set(impressions.map((i) => i.visitorId).filter(Boolean) as string[])];
+  if (visitorIds.length === 0) {
+    return [];
+  }
 
   // Get all orders for those visitors in the window
-  const orders = await db.query.orders.findMany({
-    where: and(
+  const orders = await db
+    .select({
+      visitorId: schema.orders.visitorId,
+      totalAmount: schema.orders.totalAmount,
+      attributedChannel: schema.orders.attributedChannel,
+      attributedSource: schema.orders.attributedSource,
+      placedAt: schema.orders.placedAt,
+    })
+    .from(schema.orders)
+    .where(and(
       eq(schema.orders.siteId, siteId),
       inArray(schema.orders.visitorId, visitorIds),
       gte(schema.orders.placedAt, cutoff),
-    ),
-    columns: {
-      visitorId: true,
-      totalAmount: true,
-      attributedChannel: true,
-      attributedSource: true,
-      placedAt: true,
-    },
-  });
+    ));
 
   if (orders.length === 0) {
     return [];
