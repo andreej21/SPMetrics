@@ -8,11 +8,15 @@ import {
   newOrderId,
   hashEmail,
 } from "./ids";
-import { classify, deviceTypeFromUA, type Attribution } from "./attribution";
+import { classify, deviceTypeFromUA, isBotUA, type Attribution } from "./attribution";
 import type { OrderLineItem } from "@/db/schema";
 
 // A visit ends after this much inactivity; the next event opens a fresh session.
 const SESSION_WINDOW_MS = 30 * 60 * 1000;
+
+// IP velocity threshold: if an IP spawns >N sessions in 5 minutes, flag as suspicious.
+const SUSPICIOUS_IP_VELOCITY_THRESHOLD = 20;
+const IP_VELOCITY_WINDOW_MS = 5 * 60 * 1000;
 
 export type IncomingEvent = {
   type: (typeof schema.eventTypeEnum.enumValues)[number];
@@ -84,6 +88,10 @@ export async function ingestBatch(ctx: IngestContext, incoming: IncomingEvent[])
       }
     }
 
+    // Synthesize a fallback dedupeKey if client didn't provide one, to make
+    // the unique constraint actually dedupe retries without explicit keys.
+    const dedupeKey = ev.dedupeKey ?? `${ctx.siteId}:${visitor.id}:${ev.type}:${ev.ts ?? 'x'}`;
+
     const inserted = await db
       .insert(schema.events)
       .values({
@@ -105,7 +113,7 @@ export async function ingestBatch(ctx: IngestContext, incoming: IncomingEvent[])
         spmVersion: session.spmVersion ?? null,
         spmExperiment: session.spmExperiment ?? null,
         source: ctx.source,
-        dedupeKey: ev.dedupeKey ?? null,
+        dedupeKey,
         clientTs: ev.ts ? new Date(ev.ts) : null,
         receivedAt: now,
       })
@@ -115,7 +123,7 @@ export async function ingestBatch(ctx: IngestContext, incoming: IncomingEvent[])
     if (inserted.length > 0) {
       accepted++;
       if (ev.type === "purchase" && ev.order) {
-        await recordOrder(db, ctx, visitor.id, session, identityId, ev, now);
+        await recordOrder(db, ctx, visitor.id, session, identityId, ev, session.isSuspicious ?? false, now);
       }
     }
   }
@@ -189,6 +197,21 @@ async function resolveSession(
   if (recent) return recent;
 
   const attr: Attribution = classify(ctx.landingPage, ctx.referrer, ctx.selfHost);
+
+  // Check for bot/suspicious traffic signals.
+  let isSuspicious = isBotUA(ctx.userAgent);
+  if (!isSuspicious && ctx.ipHash) {
+    const recentSessions = await db.query.sessions.findMany({
+      where: and(
+        eq(schema.sessions.siteId, ctx.siteId),
+        eq(schema.sessions.ipHash, ctx.ipHash),
+        gt(schema.sessions.startedAt, new Date(now.getTime() - IP_VELOCITY_WINDOW_MS)),
+      ),
+    });
+    if (recentSessions.length >= SUSPICIOUS_IP_VELOCITY_THRESHOLD) {
+      isSuspicious = true;
+    }
+  }
   const [created] = await db
     .insert(schema.sessions)
     .values({
@@ -218,6 +241,7 @@ async function resolveSession(
       startedAt: now,
       lastEventAt: now,
       eventCount: 0,
+      isSuspicious,
     })
     .returning();
   return created;
@@ -271,6 +295,7 @@ async function recordOrder(
   session: { id: string; channel: string | null; utmSource: string | null; utmCampaign: string | null },
   identityId: string | undefined,
   ev: IncomingEvent,
+  isSuspicious: boolean,
   now: Date,
 ) {
   const o = ev.order!;
@@ -292,6 +317,7 @@ async function recordOrder(
       attributedChannel: session.channel,
       attributedSource: session.utmSource,
       attributedCampaign: session.utmCampaign,
+      isSuspicious,
       placedAt: ev.ts ? new Date(ev.ts) : now,
       receivedAt: now,
     })

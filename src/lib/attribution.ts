@@ -133,3 +133,8 @@ export function deviceTypeFromUA(ua?: string | null): "mobile" | "tablet" | "des
   if (/Mobi|Android|iPhone|iPod/i.test(ua)) return "mobile";
   return "desktop";
 }
+
+export function isBotUA(ua?: string | null): boolean {
+  if (!ua) return false;
+  return /bot|crawler|spider|curl|wget|python-requests|headlesschrome|phantomjs|jsdom|nightmare|puppeteer/i.test(ua);
+}

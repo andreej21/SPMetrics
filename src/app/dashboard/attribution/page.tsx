@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { ChartBar, House, Code, Storefront, Rocket } from "@phosphor-icons/react/ssr";
+import { ChartBar } from "@phosphor-icons/react/ssr";
 import { getAttributionBySource, getAttributionTimeseries } from "@/lib/attribution-analytics";
 import { getSummary, listSites, getPrevPeriod } from "@/lib/analytics";
+import { Shell } from "@/components/dashboard/Shell";
+import { getAssistedConversions, getTouchpoints, attributeOrder } from "@/lib/multitouch-attribution";
 
 export const dynamic = "force-dynamic";
 
 const RANGES = [7, 30, 90];
+type Model = "last_touch" | "linear";
 
 function money(minor: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: minor % 100 === 0 ? 0 : 2 }).format(minor / 100);
@@ -14,9 +17,10 @@ function money(minor: number, currency = "USD"): string {
 export default async function AttributionDashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ site?: string; days?: string }>;
+  searchParams: Promise<{ site?: string; days?: string; model?: string }>;
 }) {
   const sp = await searchParams;
+  const model = (sp.model === "linear" ? "linear" : "last_touch") as Model;
   const sites = await listSites();
 
   if (sites.length === 0) {
@@ -34,16 +38,17 @@ export default async function AttributionDashboard({
   const days = RANGES.includes(Number(sp.days)) ? Number(sp.days) : 30;
   const site = sites.find((s) => s.id === siteId)!;
 
-  const [attribution, summary] = await Promise.all([
+  const [attribution, summary, assisted] = await Promise.all([
     getAttributionBySource(siteId, days),
     getSummary(siteId, days),
+    getAssistedConversions(siteId, days),
   ]);
 
   const totalRevenue = attribution.reduce((sum: number, row) => sum + row.revenue, 0);
   const maxRevenue = Math.max(1, ...attribution.map((a) => a.revenue));
 
   return (
-    <Shell sites={sites} siteId={siteId} days={days}>
+    <Shell sites={sites} siteId={siteId} days={days} active="attribution">
       <div className="topbar">
         <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.01em", margin: 0 }}>Attribution</h1>
         <span className="muted" style={{ fontSize: 14, fontWeight: 500 }}>{site.name}</span>
@@ -80,9 +85,22 @@ export default async function AttributionDashboard({
           </div>
         </div>
 
+        {/* Attribution model toggle */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16, fontSize: 13 }}>
+          <span style={{ color: "var(--muted)" }}>Attribution model:</span>
+          <div className="seg">
+            <Link href={`/dashboard/attribution?site=${siteId}&days=${days}&model=last_touch`} className={model === "last_touch" ? "active" : ""}>
+              Last-click
+            </Link>
+            <Link href={`/dashboard/attribution?site=${siteId}&days=${days}&model=linear`} className={model === "linear" ? "active" : ""}>
+              Linear
+            </Link>
+          </div>
+        </div>
+
         {/* Attribution breakdown */}
         <div className="card">
-          <h3 className="sec-title"><ChartBar size={14} weight="bold" /> Revenue by source</h3>
+          <h3 className="sec-title"><ChartBar size={14} weight="bold" /> Revenue by source ({model === "linear" ? "linear" : "last-click"})</h3>
           {attribution.length === 0 ? (
             <p className="muted">No attributed orders in this range yet.</p>
           ) : (
@@ -153,53 +171,47 @@ export default async function AttributionDashboard({
           )}
         </div>
 
+        {/* Assisted conversions */}
+        <div className="card">
+          <h3 className="sec-title"><ChartBar size={14} weight="bold" /> Assisted conversions (non-final touches)</h3>
+          {assisted.length === 0 ? (
+            <p className="muted">No multi-session journeys yet.</p>
+          ) : (
+            <div className="tbl-wrap">
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Last-click Revenue</th>
+                    <th>Assisted Revenue</th>
+                    <th>Assists</th>
+                    <th>Total Influenced</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assisted.map((row) => {
+                    const assistedPct = row.totalRevenue > 0 ? ((row.assistedRevenue / row.totalRevenue) * 100).toFixed(1) : "0";
+                    return (
+                      <tr key={row.source || "direct"}>
+                        <td style={{ fontWeight: 500 }}>{row.source || "Direct"}</td>
+                        <td>{money(row.lastTouchRevenue)}</td>
+                        <td style={{ color: "var(--accent)" }}>{money(row.assistedRevenue)}</td>
+                        <td>{row.assists}</td>
+                        <td style={{ fontWeight: 600 }}>{money(row.totalRevenue)} ({assistedPct}%)</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         <p className="foot">
-          <b>{site.name}</b>{site.domain ? ` · ${site.domain}` : ""} · last {days} days · last-non-direct-click attribution.
+          <b>{site.name}</b>{site.domain ? ` · ${site.domain}` : ""} · last {days} days.
         </p>
       </div>
     </Shell>
   );
 }
 
-function Shell({
-  children,
-  sites,
-  siteId,
-  days,
-}: {
-  children: React.ReactNode;
-  sites: { id: string; name: string }[];
-  siteId: string;
-  days: number;
-}) {
-  return (
-    <div className="app">
-      <aside className="sidebar">
-        <span className="brand"><span className="mark" /> SPMetrics</span>
-
-        <div className="side-group">
-          <div className="side-label">Views</div>
-          <Link href={`/dashboard?site=${siteId}&days=${days}`} className="nav-item"><House size={17} weight="bold" /> Overview</Link>
-          <Link href={`/dashboard/attribution?site=${siteId}&days=${days}`} className="nav-item active"><ChartBar size={17} weight="bold" /> Attribution</Link>
-          <Link href={`/dashboard/campaigns?site=${siteId}&days=${days}`} className="nav-item"><Rocket size={17} weight="bold" /> Campaigns</Link>
-          <Link href="/" className="nav-item"><Code size={17} weight="bold" /> Install</Link>
-        </div>
-
-        {sites.length > 0 && (
-          <div className="side-group">
-            <div className="side-label">Sites</div>
-            {sites.map((s) => (
-              <Link key={s.id} href={`/dashboard/attribution?site=${s.id}&days=${days}`} className={`nav-item${s.id === siteId ? " active" : ""}`}>
-                <Storefront size={17} weight="bold" /> {s.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        <div className="side-foot">SPMetrics · Smart Pixel Metrics</div>
-      </aside>
-
-      <div className="main">{children}</div>
-    </div>
-  );
-}

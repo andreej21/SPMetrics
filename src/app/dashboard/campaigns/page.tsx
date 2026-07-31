@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Rocket, House, Code, Storefront, ChartBar } from "@phosphor-icons/react/ssr";
+import { Rocket } from "@phosphor-icons/react/ssr";
 import { getCampaignsMetrics } from "@/lib/campaigns-analytics";
 import { listSites } from "@/lib/analytics";
+import { Shell } from "@/components/dashboard/Shell";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,7 @@ export default async function CampaignsDashboard({
   const blendedRoas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
 
   return (
-    <Shell sites={sites} siteId={siteId} days={days}>
+    <Shell sites={sites} siteId={siteId} days={days} active="campaigns">
       <div className="topbar">
         <h1 style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-0.01em", margin: 0 }}>Campaigns</h1>
         <span className="muted" style={{ fontSize: 14, fontWeight: 500 }}>{site.name}</span>
@@ -141,45 +142,3 @@ export default async function CampaignsDashboard({
   );
 }
 
-function Shell({
-  children,
-  sites,
-  siteId,
-  days,
-}: {
-  children: React.ReactNode;
-  sites: { id: string; name: string }[];
-  siteId: string;
-  days: number;
-}) {
-  return (
-    <div className="app">
-      <aside className="sidebar">
-        <span className="brand"><span className="mark" /> SPMetrics</span>
-
-        <div className="side-group">
-          <div className="side-label">Views</div>
-          <Link href={`/dashboard?site=${siteId}&days=${days}`} className="nav-item"><House size={17} weight="bold" /> Overview</Link>
-          <Link href={`/dashboard/attribution?site=${siteId}&days=${days}`} className="nav-item"><ChartBar size={17} weight="bold" /> Attribution</Link>
-          <Link href={`/dashboard/campaigns?site=${siteId}&days=${days}`} className="nav-item active"><Rocket size={17} weight="bold" /> Campaigns</Link>
-          <Link href="/" className="nav-item"><Code size={17} weight="bold" /> Install</Link>
-        </div>
-
-        {sites.length > 0 && (
-          <div className="side-group">
-            <div className="side-label">Sites</div>
-            {sites.map((s) => (
-              <Link key={s.id} href={`/dashboard/campaigns?site=${s.id}&days=${days}`} className={`nav-item${s.id === siteId ? " active" : ""}`}>
-                <Storefront size={17} weight="bold" /> {s.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        <div className="side-foot">SPMetrics · Smart Pixel Metrics</div>
-      </aside>
-
-      <div className="main">{children}</div>
-    </div>
-  );
-}

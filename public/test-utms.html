@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UTM & SPM Test — SPMetrics</title>
+  <!-- SPMetrics loader snippet -->
+  <script>
+    !function(){window.sp=window.sp||function(){(sp.q=sp.q||[]).push(arguments)};
+    var s=document.createElement('script');s.async=1;s.src='/px.js';
+    document.head.appendChild(s);}();
+    sp('init','pk_dev_demo');
+  </script>
+  <style>
+    body{font-family:ui-sans-serif,system-ui,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;line-height:1.6}
+    .section{margin:30px 0;padding:20px;border:1px solid #e2e8f0;border-radius:8px}
+    .section h2{margin-top:0}
+    a{color:#0ea5e9;text-decoration:none}
+    a:hover{text-decoration:underline}
+    code{background:#f1f5f9;padding:2px 6px;border-radius:4px;font-family:monospace}
+    .param-row{margin:8px 0;padding:8px;background:#f8fafc;border-radius:4px;font-size:13px}
+    .param{display:inline-block;margin-right:20px}
+    .param-label{font-weight:600;color:#475569}
+    .param-value{color:#64748b;font-family:monospace}
+    button{padding:8px 12px;margin:4px 4px 4px 0;border:1px solid #cbd5e1;border-radius:6px;background:#0ea5e9;color:white;cursor:pointer;text-decoration:none;display:inline-block}
+    button:hover{background:#0284c7}
+    #log{background:#0f172a;color:#e2e8f0;padding:12px;border-radius:8px;height:200px;overflow:auto;font-size:12px;white-space:pre-wrap;margin-top:12px}
+    .test-link{display:block;margin:8px 0;padding:10px;background:#f1f5f9;border-radius:6px;border-left:3px solid #0ea5e9}
+  </style>
+</head>
+<body>
+  <h1>UTM & SPM Parameter Testing</h1>
+  <p>Test the pixel's UTM and SPM parameter capture. Click a link to fire an auto page_view with the parameters, then check <code>/api/debug/stats</code>.</p>
+
+  <!-- Standard UTM Tests -->
+  <div class="section">
+    <h2>📊 Standard UTM Parameters</h2>
+    <p>Test basic UTM tracking (utm_source, utm_medium, utm_campaign).</p>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">Source:</span> <span class="param-value">google</span></span>
+      <span class="param"><span class="param-label">Medium:</span> <span class="param-value">cpc</span></span>
+      <span class="param"><span class="param-label">Campaign:</span> <span class="param-value">summer_sale</span></span>
+    </div>
+    <a href="/?utm_source=google&utm_medium=cpc&utm_campaign=summer_sale" class="test-link">
+      <button>🔗 Google CPC: Summer Sale</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">Source:</span> <span class="param-value">facebook</span></span>
+      <span class="param"><span class="param-label">Medium:</span> <span class="param-value">paid</span></span>
+      <span class="param"><span class="param-label">Campaign:</span> <span class="param-value">retargeting</span></span>
+    </div>
+    <a href="/?utm_source=facebook&utm_medium=paid&utm_campaign=retargeting" class="test-link">
+      <button>👥 Facebook Ads: Retargeting</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">Source:</span> <span class="param-value">newsletter</span></span>
+      <span class="param"><span class="param-label">Medium:</span> <span class="param-value">email</span></span>
+      <span class="param"><span class="param-label">Campaign:</span> <span class="param-value">weekly_digest</span></span>
+      <span class="param"><span class="param-label">Content:</span> <span class="param-value">top_banner</span></span>
+    </div>
+    <a href="/?utm_source=newsletter&utm_medium=email&utm_campaign=weekly_digest&utm_content=top_banner" class="test-link">
+      <button>✉️ Email: Weekly Digest (with content)</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">Source:</span> <span class="param-value">instagram</span></span>
+      <span class="param"><span class="param-label">Medium:</span> <span class="param-value">social</span></span>
+      <span class="param"><span class="param-label">Campaign:</span> <span class="param-value">influencer</span></span>
+      <span class="param"><span class="param-label">Term:</span> <span class="param-value">summer_outfit</span></span>
+    </div>
+    <a href="/?utm_source=instagram&utm_medium=social&utm_campaign=influencer&utm_term=summer_outfit" class="test-link">
+      <button>📸 Instagram: Influencer (with term)</button>
+    </a>
+  </div>
+
+  <!-- SPMetrics Custom Parameters -->
+  <div class="section">
+    <h2>🚀 SPMetrics Custom Parameters (spm_*)</h2>
+    <p>Test custom SPMetrics tracking for internal versioning, experiments, and channels.</p>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">spm_source:</span> <span class="param-value">internal</span></span>
+      <span class="param"><span class="param-label">spm_version:</span> <span class="param-value">v2.1</span></span>
+    </div>
+    <a href="/?spm_source=internal&spm_version=v2.1" class="test-link">
+      <button>Internal: Version 2.1</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">spm_source:</span> <span class="param-value">partner</span></span>
+      <span class="param"><span class="param-label">spm_version:</span> <span class="param-value">v1.0</span></span>
+      <span class="param"><span class="param-label">spm_channel:</span> <span class="param-value">affiliate</span></span>
+    </div>
+    <a href="/?spm_source=partner&spm_version=v1.0&spm_channel=affiliate" class="test-link">
+      <button>Partner: Affiliate Program</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">spm_experiment:</span> <span class="param-value">checkout_v3</span></span>
+      <span class="param"><span class="param-label">spm_channel:</span> <span class="param-value">web</span></span>
+    </div>
+    <a href="/?spm_experiment=checkout_v3&spm_channel=web" class="test-link">
+      <button>🧪 Experiment: Checkout V3</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">spm_source:</span> <span class="param-value">mobile_app</span></span>
+      <span class="param"><span class="param-label">spm_version:</span> <span class="param-value">ios_1.5.2</span></span>
+      <span class="param"><span class="param-label">spm_experiment:</span> <span class="param-value">variant_b</span></span>
+    </div>
+    <a href="/?spm_source=mobile_app&spm_version=ios_1.5.2&spm_experiment=variant_b" class="test-link">
+      <button>📱 Mobile: iOS 1.5.2 (Variant B)</button>
+    </a>
+  </div>
+
+  <!-- Combined UTM + SPM Tests -->
+  <div class="section">
+    <h2>🎯 Combined UTM + SPM</h2>
+    <p>Test both standard UTMs and custom SPM parameters together.</p>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">utm_source:</span> <span class="param-value">google</span></span>
+      <span class="param"><span class="param-label">utm_medium:</span> <span class="param-value">cpc</span></span>
+      <span class="param"><span class="param-label">spm_experiment:</span> <span class="param-value">landing_page_a</span></span>
+    </div>
+    <a href="/?utm_source=google&utm_medium=cpc&utm_campaign=branded&spm_experiment=landing_page_a" class="test-link">
+      <button>Google + Experiment Variant</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">utm_source:</span> <span class="param-value">facebook</span></span>
+      <span class="param"><span class="param-label">utm_medium:</span> <span class="param-value">paid</span></span>
+      <span class="param"><span class="param-label">spm_source:</span> <span class="param-value">partner</span></span>
+      <span class="param"><span class="param-label">spm_version:</span> <span class="param-value">v2.0</span></span>
+    </div>
+    <a href="/?utm_source=facebook&utm_medium=paid&utm_campaign=awareness&spm_source=partner&spm_version=v2.0" class="test-link">
+      <button>Facebook + Partner Integration V2</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">utm_source:</span> <span class="param-value">newsletter</span></span>
+      <span class="param"><span class="param-label">utm_medium:</span> <span class="param-value">email</span></span>
+      <span class="param"><span class="param-label">spm_channel:</span> <span class="param-value">vip</span></span>
+    </div>
+    <a href="/?utm_source=newsletter&utm_medium=email&utm_campaign=vip_promo&spm_channel=vip" class="test-link">
+      <button>Email + VIP Channel</button>
+    </a>
+  </div>
+
+  <!-- Click ID Tests -->
+  <div class="section">
+    <h2>🔗 Ad Platform Click IDs</h2>
+    <p>Test click ID capture (strongest attribution signal).</p>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">fbclid:</span> <span class="param-value">IwAR1234567890</span></span>
+    </div>
+    <a href="/?fbclid=IwAR1234567890abcdefghijklmnopqr" class="test-link">
+      <button>Meta: Facebook Click ID</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">gclid:</span> <span class="param-value">Cj0KCQjw8oCBBhD5ARIs...</span></span>
+    </div>
+    <a href="/?gclid=Cj0KCQjw8oCBBhD5ARIsAK6JZZgVe8JkL1234567890abcdefg" class="test-link">
+      <button>Google: Google Click ID</button>
+    </a>
+
+    <div class="param-row">
+      <span class="param"><span class="param-label">ttclid:</span> <span class="param-value">ttclid_123456789...</span></span>
+    </div>
+    <a href="/?ttclid=ttclid_1234567890abcdefghijklmnopqr" class="test-link">
+      <button>TikTok: TikTok Click ID</button>
+    </a>
+  </div>
+
+  <!-- Manual Event Testing -->
+  <div class="section">
+    <h2>🎪 Manual Event Testing</h2>
+    <p>Test custom events alongside parameters.</p>
+    <button onclick="testWithProduct()">Product View + UTMs</button>
+    <button onclick="testAddCart()">Add to Cart + SPM</button>
+    <button onclick="testPurchase()">Purchase + Both</button>
+    <h3>Event log</h3>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    function log(m){
+      var el=document.getElementById('log');
+      var ts=new Date().toLocaleTimeString();
+      el.textContent+='['+ts+'] '+m+'\n';
+      el.scrollTop=el.scrollHeight;
+    }
+
+    function testWithProduct(){
+      sp('track','product_view',{
+        productId:'SKU-123',
+        title:'Blue Tee',
+        price:2999,
+        _utm_source:'test',
+        _utm_medium:'manual'
+      });
+      log('product_view SKU-123 (utm: google/cpc)');
+    }
+
+    function testAddCart(){
+      sp('track','add_to_cart',{
+        productId:'SKU-123',
+        qty:2,
+        price:2999,
+        _spm_version:'v2.1'
+      });
+      log('add_to_cart SKU-123 (spm_version: v2.1)');
+    }
+
+    function testPurchase(){
+      var id='test-'+Date.now();
+      sp('track','purchase',{
+        _id:id,
+        order:{
+          externalOrderId:id,
+          orderNumber:id,
+          totalAmount:5998,
+          currency:'USD',
+          lineItems:[{productId:'SKU-123',title:'Blue Tee',quantity:2,price:2999}]
+        }
+      });
+      log('purchase '+id+' ($59.98) with utm+spm');
+    }
+
+    log('page loaded — auto page_view fired');
+    log('click any link above to test with URL parameters');
+  </script>
+</body>
+</html>

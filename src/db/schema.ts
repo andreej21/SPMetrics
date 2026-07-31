@@ -173,6 +173,7 @@ export const sessions = pgTable(
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
     lastEventAt: timestamp("last_event_at", { withTimezone: true }).notNull().defaultNow(),
     eventCount: integer("event_count").notNull().default(0),
+    isSuspicious: boolean("is_suspicious").default(false),
   },
   (t) => ({
     siteVisitorIdx: index("sessions_site_visitor_idx").on(t.siteId, t.visitorId),
@@ -257,6 +258,8 @@ export const orders = pgTable(
     attributedChannel: text("attributed_channel"),
     attributedSource: text("attributed_source"),
     attributedCampaign: text("attributed_campaign"),
+
+    isSuspicious: boolean("is_suspicious").default(false),
 
     placedAt: timestamp("placed_at", { withTimezone: true }).notNull().defaultNow(),
     receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),

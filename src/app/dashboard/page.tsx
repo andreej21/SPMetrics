@@ -1,8 +1,5 @@
 import Link from "next/link";
 import {
-  House,
-  Storefront,
-  Code,
   Wallet,
   Megaphone,
   TrendUp,
@@ -25,6 +22,9 @@ import {
   listSites,
 } from "@/lib/analytics";
 import RevenueChart from "./RevenueChart";
+import { Shell } from "@/components/dashboard/Shell";
+import { Kpi } from "@/components/dashboard/Kpi";
+import { Table } from "@/components/dashboard/Table";
 
 export const dynamic = "force-dynamic";
 
@@ -97,7 +97,7 @@ export default async function Dashboard({
   const hasSpend = roas.some((r) => r.spend > 0);
 
   return (
-    <Shell sites={sites} siteId={siteId} days={days}>
+    <Shell sites={sites} siteId={siteId} days={days} active="overview">
       <div className="topbar">
         <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em", margin: 0 }}>Overview</h1>
         <span className="muted" style={{ fontSize: 14, fontWeight: 500 }}>{site.name}</span>
@@ -197,76 +197,3 @@ export default async function Dashboard({
   );
 }
 
-function Shell({
-  children,
-  sites,
-  siteId,
-  days,
-}: {
-  children: React.ReactNode;
-  sites: { id: string; name: string }[];
-  siteId: string;
-  days: number;
-}) {
-  return (
-    <div className="app">
-      <aside className="sidebar">
-        <span className="brand"><span className="mark" /> SPMetrics</span>
-
-        <div className="side-group">
-          <div className="side-label">Views</div>
-          <Link href={`/dashboard?site=${siteId}&days=${days}`} className="nav-item active"><House size={17} weight="bold" /> Overview</Link>
-          <Link href={`/dashboard/attribution?site=${siteId}&days=${days}`} className="nav-item"><ChartBar size={17} weight="bold" /> Attribution</Link>
-          <Link href={`/dashboard/campaigns?site=${siteId}&days=${days}`} className="nav-item"><Rocket size={17} weight="bold" /> Campaigns</Link>
-          <Link href="/" className="nav-item"><Code size={17} weight="bold" /> Install</Link>
-        </div>
-
-        {sites.length > 0 && (
-          <div className="side-group">
-            <div className="side-label">Sites</div>
-            {sites.map((s) => (
-              <Link key={s.id} href={`/dashboard?site=${s.id}&days=${days}`} className={`nav-item${s.id === siteId ? " active" : ""}`}>
-                <Storefront size={17} weight="bold" /> {s.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        <div className="side-foot">SPMetrics · Smart Pixel Metrics</div>
-      </aside>
-
-      <div className="main">{children}</div>
-    </div>
-  );
-}
-
-function Kpi({ label, value, icon, hero, delta }: { label: string; value: string; icon?: React.ReactNode; hero?: boolean; delta?: React.ReactNode }) {
-  return (
-    <div className={`kpi${hero ? " hero" : ""}`}>
-      <div className="k-top">
-        <div className="k-label">{label}</div>
-        {icon && <div className="k-icon">{icon}</div>}
-      </div>
-      <div className="k-value">{value}</div>
-      {delta}
-    </div>
-  );
-}
-
-function Table({ head, rows, empty }: { head: string[]; rows: string[][]; empty: string }) {
-  if (rows.length === 0) return <p className="muted">{empty}</p>;
-  return (
-    <div className="tbl-wrap">
-      <table className="tbl">
-        <thead>
-          <tr>{head.map((h) => <th key={h}>{h}</th>)}</tr>
-        </thead>
-        <tbody>
-          {rows.map((r, ri) => (
-            <tr key={ri}>{r.map((cell, ci) => <td key={ci}>{cell}</td>)}</tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
